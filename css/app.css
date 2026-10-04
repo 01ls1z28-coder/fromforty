@@ -3108,3 +3108,45 @@ h1 {
     inset 0 1px 0 rgba(255, 245, 247, 0.42),
     0 0 18px rgba(255, 107, 125, 0.28);
 }
+
+/* Local layout: center the instruction line, and put Drag racing left of Results. */
+.driver-line {
+  text-align: center;
+}
+
+@media (min-width: 1000px) {
+  .slip-body {
+    grid-template-columns: minmax(160px, 0.75fr) minmax(0, 1.55fr);
+  }
+
+  .roll-window-layout > .b-rest {
+    grid-column: 2;
+    grid-row: 3;
+  }
+
+  .slip-body > .drag-panel {
+    grid-column: 1;
+    grid-row: 3;
+  }
+}
+
+@media (min-width: 901px) {
+  .vs-results-body {
+    grid-template-columns: minmax(335px, 0.90fr) minmax(0, 1.10fr);
+  }
+
+  .vs-result-box.signature-box {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .vs-result-box.drag-box {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .vs-result-box.results-box {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}

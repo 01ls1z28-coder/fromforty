@@ -159,7 +159,6 @@
 
     function addFeature(block, label, key, startMph, endMph) {
       var metric = el('div', 'metric');
-      metric.appendChild(el('span', 'metric-label', 'signature'));
       metric.appendChild(el('span', 'range', label));
       var time = row[key];
       if (time == null) {
@@ -635,7 +634,7 @@
       table.appendChild(row);
     }
 
-    var signature = makeSection('Signature pulls', 'TIME + DISTANCE IN WINDOW', 'signature-box');
+    var signature = makeSection('Pulls', 'TIME + DISTANCE IN WINDOW', 'signature-box');
     [['60–130', 't60_130', 60, 130], ['100–150', 't100_150', 100, 150], ['40–120', 't40_120', 40, 120]]
       .forEach(function (pull) { addRow(signature.table, pull[0], pull[1], ' s', 4, 'signature-row', pull[2], pull[3]); });
     body.appendChild(signature.block);
@@ -863,7 +862,7 @@
         // the original single-car slip presentation.
         if (rows.length === 1) renderResults(card, rows[i], margins[i]);
         if (status) status.textContent = rows[i].inputMode === 'time'
-          ? 'Roll windows projected from 60–130.'
+          ? ''
           : (rows[i].trapNote || 'Roll windows from trap speed.');
       }
     });
