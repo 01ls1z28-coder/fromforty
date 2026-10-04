@@ -2942,3 +2942,140 @@ h1 {
   width: 100%;
   max-width: none;
 }
+
+/* Final header polish: keep the suite links left, center the mark, and reserve
+   the right side for the existing result-size control. */
+.top {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-areas: "nav brand scale";
+  align-items: center;
+}
+
+.top .site-nav {
+  grid-area: nav;
+  order: 0;
+  justify-self: start;
+  align-self: center;
+}
+
+.top .brand-block {
+  grid-area: brand;
+  justify-self: center;
+  text-align: center;
+}
+
+.top .text-scale {
+  grid-area: scale;
+  justify-self: end;
+  width: min(100%, 360px);
+}
+
+/* A slimmer, more energized VS banner: the data remains unchanged while the
+   header reads as a compact launch strip instead of a tall card. */
+.vs-head {
+  position: relative;
+  min-height: 0;
+  padding: 8px 14px 7px;
+  align-items: center;
+  border-bottom-color: rgba(76, 201, 240, 0.30);
+  background:
+    linear-gradient(90deg, rgba(76, 201, 240, 0.12), transparent 34%, rgba(200, 255, 74, 0.07)),
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0 1px, transparent 1px 5px),
+    rgba(8, 12, 16, 0.88);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.07);
+}
+
+.vs-head::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #4cc9f0 28%, #c8ff4a 72%, transparent);
+  box-shadow: 0 0 14px rgba(76, 201, 240, 0.65), 0 0 18px rgba(200, 255, 74, 0.26);
+}
+
+.vs-head::after {
+  content: "";
+  position: absolute;
+  right: 14px;
+  bottom: -1px;
+  width: 76px;
+  height: 2px;
+  background: #c8ff4a;
+  box-shadow: 0 0 10px rgba(200, 255, 74, 0.8);
+}
+
+.vs-kicker {
+  font-size: 7px;
+  letter-spacing: 0.22em;
+}
+
+.vs-title {
+  margin-top: 1px;
+  font-size: clamp(16px, 2vw, 19px);
+  letter-spacing: 0.10em;
+  text-shadow: 0 0 12px rgba(76, 201, 240, 0.24);
+}
+
+.vs-rule {
+  font-size: 8px;
+  letter-spacing: 0.14em;
+}
+
+/* Let the trace use the complete card width instead of stopping at the
+   Results panel's inner padding. */
+.results > .speed-graph {
+  width: calc(100% + 28px);
+  max-width: none;
+  margin-left: -14px;
+  margin-right: -14px;
+  border-radius: 10px;
+}
+
+.vs-panel > .vs-graph {
+  width: 100%;
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+  border-radius: 0 0 12px 12px;
+}
+
+@media (max-width: 920px) {
+  .top {
+    grid-template-columns: minmax(0, 1fr) minmax(190px, 1.25fr);
+    grid-template-areas: "brand scale" "nav nav";
+  }
+
+  .top .site-nav {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 720px) {
+  .top {
+    grid-template-columns: 1fr;
+    grid-template-areas: "brand" "scale" "nav";
+  }
+
+  .top .brand-block,
+  .top .text-scale,
+  .top .site-nav {
+    justify-self: stretch;
+  }
+
+  .top .brand-block { text-align: center; }
+}
+
+/* In VS mode each input bay has three columns: place Remove in the open slot
+   directly below the 1/4-mile trap field. */
+@media (min-width: 641px) {
+  .cars.two-up .car .remove {
+    grid-column: 3;
+    grid-row: 2;
+    justify-self: start;
+    align-self: start;
+    margin-top: 0;
+  }
+}

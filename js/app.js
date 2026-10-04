@@ -478,10 +478,13 @@
     var identity = el('div', 'car-identity car-' + (car.id === 1 ? 'one' : 'two'));
     identity.appendChild(el('span', 'car-identity-kicker', 'MEASUREMENT INPUT'));
     identity.appendChild(el('strong', 'car-identity-name', 'Car ' + (car.id === 1 ? '1' : '2')));
+    // Keep the remove control in the input grid. In VS mode the sixth grid
+    // slot sits directly beneath the 1/4-mile trap input instead of creating
+    // a separate row below the card.
+    primary.appendChild(remove);
     card.appendChild(identity);
     card.appendChild(primary);
     card.appendChild(results);
-    card.appendChild(remove);
     document.getElementById('cars').appendChild(card);
     ensureRunAction();
     return card;
