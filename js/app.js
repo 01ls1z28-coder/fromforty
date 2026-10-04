@@ -197,7 +197,7 @@
       var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('viewBox', '0 0 760 300');
       svg.setAttribute('role', 'img');
-      svg.setAttribute('aria-label', 'Interactive projected speed versus time from 40 to 200 miles per hour');
+      svg.setAttribute('aria-label', 'Interactive projected speed versus time, Y axis 0 to 250 miles per hour');
       var ns = 'http://www.w3.org/2000/svg';
       function svgEl(tag, attrs) {
         var node = document.createElementNS(ns, tag);
@@ -210,8 +210,8 @@
       if (!endRoll || !(endRoll.seconds > 0)) return;
       var endTime = endRoll.seconds;
       var speedMarks = [40, 80, 100, 130, 150, 200];
-      [40, 80, 120, 160, 200].forEach(function (speedMark) {
-        var y = bottom - ((speedMark - 40) / 160) * (bottom - top);
+      [0, 50, 100, 150, 200, 250].forEach(function (speedMark) {
+        var y = bottom - (speedMark / 250) * (bottom - top);
         svg.appendChild(svgEl('line', { x1: left, y1: y, x2: right, y2: y, class: 'graph-grid' }));
         var label = svgEl('text', { x: left - 10, y: y + 4, class: 'graph-y-label', 'text-anchor': 'end' });
         label.textContent = speedMark;
@@ -227,7 +227,7 @@
         var mph = 40 + (160 * sample / 160);
         var elapsed = mph === 40 ? 0 : Roll.rollTime(profileDistance, 40, mph, profileTrap).seconds;
         var x = left + (elapsed / endTime) * (right - left);
-        var y = bottom - ((mph - 40) / 160) * (bottom - top);
+        var y = bottom - (mph / 250) * (bottom - top);
         samples.push({ mph: mph, elapsed: elapsed, x: x, y: y });
         points.push(x.toFixed(2) + ',' + y.toFixed(2));
       }
@@ -242,7 +242,7 @@
       speedMarks.forEach(function (speedMark) {
         var elapsed = speedMark === 40 ? 0 : Roll.rollTime(profileDistance, 40, speedMark, profileTrap).seconds;
         var x = left + (elapsed / endTime) * (right - left);
-        var y = bottom - ((speedMark - 40) / 160) * (bottom - top);
+        var y = bottom - (speedMark / 250) * (bottom - top);
         svg.appendChild(svgEl('circle', { cx: x, cy: y, r: 3, class: 'graph-dot' }));
       });
       var timeLabel = svgEl('text', { x: right, y: bottom + 48, class: 'graph-axis-label', 'text-anchor': 'end' });
@@ -701,8 +701,8 @@
       });
       var endTime = Math.max.apply(Math, endTimes);
       var speedMarks = [40, 80, 100, 130, 150, 200];
-      [40, 80, 120, 160, 200].forEach(function (speedMark) {
-        var y = bottom - ((speedMark - 40) / 160) * (bottom - top);
+      [0, 50, 100, 150, 200, 250].forEach(function (speedMark) {
+        var y = bottom - (speedMark / 250) * (bottom - top);
         svg.appendChild(svgEl('line', { x1: left, y1: y, x2: right, y2: y, class: 'graph-grid' }));
         var label = svgEl('text', { x: left - 10, y: y + 4, class: 'graph-y-label', 'text-anchor': 'end' });
         label.textContent = speedMark;
@@ -720,7 +720,7 @@
           var mph = 40 + sample;
           var elapsed = mph === 40 ? 0 : Roll.rollTime(profile.distance, 40, mph, profile.trap).seconds;
           var x = left + (elapsed / endTime) * (right - left);
-          var y = bottom - ((mph - 40) / 160) * (bottom - top);
+          var y = bottom - (mph / 250) * (bottom - top);
           samples.push({ mph: mph, elapsed: elapsed, x: x, y: y });
           points.push(x.toFixed(2) + ',' + y.toFixed(2));
         }
@@ -729,7 +729,7 @@
         speedMarks.forEach(function (speedMark) {
           var elapsed = speedMark === 40 ? 0 : Roll.rollTime(profile.distance, 40, speedMark, profile.trap).seconds;
           var x = left + (elapsed / endTime) * (right - left);
-          var y = bottom - ((speedMark - 40) / 160) * (bottom - top);
+          var y = bottom - (speedMark / 250) * (bottom - top);
           svg.appendChild(svgEl('circle', { cx: x, cy: y, r: 3, class: 'graph-dot ' + colors[carIndex] }));
         });
       });
