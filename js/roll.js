@@ -4,8 +4,9 @@
  * Trap-only mode
  * --------------
  * Inputs: a trap speed v_t at a timeslip distance D, or a measured 60–130 / 100–150 time.
- * Supported timeslip marks are 660 ft (1/8 mile), 1000 ft, and
+ * User-entered timeslip marks are 660 ft (1/8 mile), 1000 ft, and
  * 1320 ft (1/4 mile). If several are filled, the farthest mark wins.
+ * The same projection can display 2640 ft (1/2 mile) and 5280 ft (1 mile).
  *
  * Constant power, no drag:
  *   P = m * v_t^3 / (3 * D)
@@ -31,6 +32,8 @@
   var EIGHTH_FT = 660;
   var THOUSAND_FT = 1000;
   var QUARTER_FT = 1320;
+  var HALF_MILE_FT = 2640;
+  var MILE_FT = 5280;
   var ROLL_EXPONENT = 0.229;
 
   function trim(raw) {
@@ -332,7 +335,13 @@
       // A single entered trap determines the equivalent speed at each other
       // mark through the same constant-power equation. These are trap speeds
       // only; no elapsed time or 60-foot result is manufactured.
-      TRAP_MARKS.forEach(function (mark) {
+      [
+        { source: 'eighth', distanceFt: EIGHTH_FT },
+        { source: '1000', distanceFt: THOUSAND_FT },
+        { source: 'quarter', distanceFt: QUARTER_FT },
+        { source: 'half-mile', distanceFt: HALF_MILE_FT },
+        { source: 'mile', distanceFt: MILE_FT }
+      ].forEach(function (mark) {
         var trapMph = trapSpeedAtDistance(trap.trapMph, trap.distanceFt, mark.distanceFt);
         if (trapMph != null) {
           result.dragTraps.push({
@@ -347,7 +356,9 @@
       [
         { source: 'eighth', distanceFt: EIGHTH_FT },
         { source: '1000', distanceFt: THOUSAND_FT },
-        { source: 'quarter', distanceFt: QUARTER_FT }
+        { source: 'quarter', distanceFt: QUARTER_FT },
+        { source: 'half-mile', distanceFt: HALF_MILE_FT },
+        { source: 'mile', distanceFt: MILE_FT }
       ].forEach(function (mark) {
         var trapMph = trapSpeedFromRollTime(mark.distanceFt, resolved.referenceSeconds,
           resolved.referenceStartMph, resolved.referenceEndMph);
@@ -394,6 +405,8 @@
     EIGHTH_FT: EIGHTH_FT,
     THOUSAND_FT: THOUSAND_FT,
     QUARTER_FT: QUARTER_FT,
+    HALF_MILE_FT: HALF_MILE_FT,
+    MILE_FT: MILE_FT,
     TRAP_MARKS: TRAP_MARKS,
     rollTime: rollTime,
     trapSpeedAtDistance: trapSpeedAtDistance,

@@ -12,7 +12,7 @@
       <p class="mark">Roll racing</p>
       <h1>FromForty</h1>
     </div>
-    <p class="lede">Enter mph from a real timeslip or a measured roll time. Compare up to four cars.</p>
+    <p class="lede">Enter mph from a real timeslip or a measured roll time. Compare two cars side by side.</p>
   </header>
 
   <nav class="site-nav" aria-label="Racing apps">
@@ -20,12 +20,15 @@
     <a href="https://01ls1z28-coder.github.io/velocitybench-powercurve/">PowerCurve</a>
   </nav>
 
-  <p class="driver-line">Use the farthest mph mark you have, or enter a measured 60–130 / 100–150 to project the roll windows. Trap mph takes priority; without mph, 60–130 takes priority.</p>
+  <p class="driver-line">Enter one measured mph mark or one roll time. The other fields clear automatically, and the same input projects the roll windows and trap speeds.</p>
 
   <div id="cars" class="cars"></div>
 
+  <section id="comparison" class="comparison" aria-live="polite" hidden></section>
+
   <section class="add-card" aria-label="Add another car">
-    <button id="add" type="button">＋ Add car</button>
+    <button id="add" type="button">＋ Add second car</button>
+    <p>Run two cars side by side to see the difference.</p>
   </section>
 
   <footer>Created by Jorge Guerra</footer>

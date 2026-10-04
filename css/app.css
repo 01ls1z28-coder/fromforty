@@ -686,3 +686,1302 @@ footer {
     min-height: 92px;
   }
 }
+
+/* High-end racing display: use the full results bay without adding noise. */
+body {
+  max-width: 1180px;
+  padding: 32px 24px 56px;
+}
+
+.top {
+  position: relative;
+  padding: 7px 0 24px;
+  border-bottom-color: rgba(201, 160, 90, 0.52);
+}
+
+.top::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 180px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--brass-light), transparent);
+  box-shadow: 0 0 16px rgba(201, 160, 90, 0.30);
+}
+
+.mark,
+.site-nav a { text-shadow: 0 0 12px rgba(224, 193, 124, 0.18); }
+
+.driver-line {
+  max-width: 78em;
+  margin-top: 16px;
+  color: #aeb8bd;
+  font-size: 12px;
+}
+
+.cars { gap: 18px; margin-top: 17px; }
+
+.car {
+  position: relative;
+  overflow: hidden;
+  gap: 17px;
+  padding: 16px;
+  border-color: rgba(201, 160, 90, 0.48);
+  background-color: rgba(7, 10, 12, 0.95);
+  box-shadow:
+    0 20px 48px rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.065),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.015);
+}
+
+.car::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(120deg, rgba(255,255,255,0.035), transparent 18%, transparent 78%, rgba(201,160,90,0.035));
+}
+
+.results {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  padding: 0 14px 15px;
+  border-color: rgba(201, 160, 90, 0.48);
+  background:
+    linear-gradient(110deg, rgba(255,255,255,0.035), transparent 27%),
+    linear-gradient(180deg, rgba(4,7,9,0.985), rgba(10,14,16,0.94));
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.055),
+    inset 0 -20px 40px rgba(0,0,0,0.13),
+    0 12px 26px rgba(0,0,0,0.24);
+}
+
+.slip-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 18px;
+  min-height: 78px;
+  margin: 0 -14px;
+  padding: 13px 16px 12px;
+  border-bottom: 1px solid rgba(201,160,90,0.34);
+  background:
+    linear-gradient(90deg, rgba(201,160,90,0.13), transparent 44%),
+    linear-gradient(135deg, rgba(255,255,255,0.025), transparent 55%);
+}
+
+.slip-identity { min-width: 0; }
+.slip-kicker {
+  display: block;
+  margin-bottom: 4px;
+  color: #78868c;
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+
+.slip-header .result-name {
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  color: #f4f7f7;
+  font-size: clamp(14px, 1.7vw, 18px);
+  letter-spacing: 0.12em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.speed-readout {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: baseline;
+  column-gap: 7px;
+  padding: 5px 11px 6px;
+  border-left: 1px solid rgba(240,161,91,0.42);
+  border-right: 1px solid rgba(240,161,91,0.42);
+  background: rgba(240,161,91,0.045);
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+
+.speed-label {
+  grid-column: 1 / -1;
+  color: #c58a52;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.speed-value {
+  color: #f0a15b;
+  font-size: clamp(22px, 3vw, 31px);
+  line-height: 0.95;
+  text-shadow: 0 0 16px rgba(240,161,91,0.20);
+}
+
+.speed-unit {
+  color: #e1b06a;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.slip-header .slip-tag {
+  align-self: start;
+  padding-top: 5px;
+  color: var(--brass-light);
+  font-size: 8px;
+}
+
+.slip-body {
+  grid-template-columns: minmax(0, 1.72fr) minmax(220px, 0.78fr);
+  gap: 15px;
+  margin-top: 14px;
+}
+
+.slip-body .slip-section {
+  padding: 11px 12px 12px;
+  border-color: rgba(201,160,90,0.29);
+  background: rgba(2,5,7,0.68);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.025);
+}
+
+.slip-body .slip-section-head { min-height: 27px; }
+.slip-body .slip-section-title { color: #d7b56d; font-size: 10px; }
+
+.roll-window-layout { gap: 11px; }
+.roll-window-layout .b-feature {
+  gap: 10px;
+  padding: 0;
+  background: transparent;
+}
+
+.roll-window-layout .metric {
+  min-height: 124px;
+  padding: 14px 13px 12px;
+  border-color: rgba(155,223,186,0.27);
+  background:
+    linear-gradient(145deg, rgba(155,223,186,0.11), transparent 68%),
+    linear-gradient(180deg, rgba(16,30,25,0.62), rgba(3,8,8,0.72));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 5px 13px rgba(0,0,0,0.17);
+}
+
+.roll-window-layout .metric::after {
+  content: "";
+  display: block;
+  width: 34px;
+  height: 2px;
+  margin-top: 7px;
+  background: var(--green);
+  box-shadow: 0 0 10px rgba(155,223,186,0.28);
+}
+
+.roll-window-layout .metric .range { font-size: 12px; font-weight: 750; letter-spacing: 0.04em; }
+.roll-window-layout .metric .time { font-size: clamp(22px, 2.8vw, 30px); }
+.roll-window-layout .metric .metric-label { color: #7fb99a; font-size: 8px; }
+
+.roll-window-layout .b-rest {
+  padding: 10px 12px 11px;
+  border: 1px solid rgba(174,184,189,0.13);
+  border-radius: 7px;
+  background: rgba(0,3,5,0.35);
+}
+
+.roll-window-layout .b-rest-head {
+  margin-bottom: 2px;
+  color: #809096;
+  font-size: 9px;
+}
+
+.roll-window-layout .b-rest .pull { min-height: 27px; }
+.roll-window-layout .b-rest .pull-time { font-size: 13px; }
+
+.drag-panel {
+  border-color: rgba(240,161,91,0.40) !important;
+  background:
+    linear-gradient(150deg, rgba(240,161,91,0.09), transparent 45%),
+    rgba(3,6,8,0.70) !important;
+}
+
+.drag-panel .slip-section-title,
+.drag-panel .slip-section-tag { color: #e1a15d; }
+.drag-panel .pull { min-height: 47px; border-top-color: rgba(240,161,91,0.20); }
+.drag-panel .pull:first-of-type { border-top-color: rgba(240,161,91,0.33); }
+.drag-panel .pull-name { color: #d39a59; font-size: 9px; letter-spacing: 0.045em; }
+.drag-panel .trap-speed { font-size: clamp(17px, 2vw, 22px); }
+.drag-panel .trap-unit { color: #e1a15d; font-size: 9px; }
+
+/* The graph is a visual readout of the existing roll equation, not new physics. */
+.speed-graph {
+  margin: 0 0 11px;
+  padding: 10px 10px 7px;
+  border: 1px solid rgba(155,223,186,0.20);
+  border-radius: 7px;
+  background:
+    linear-gradient(180deg, rgba(155,223,186,0.055), transparent 55%),
+    rgba(1,5,6,0.75);
+}
+
+.speed-graph-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 2px 4px;
+}
+
+.speed-graph-title {
+  color: #9bdfba;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.15em;
+}
+
+.speed-graph-legend {
+  color: #71817f;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.07em;
+}
+
+.speed-graph svg { display: block; width: 100%; height: 190px; overflow: visible; }
+.graph-grid { stroke: rgba(155,223,186,0.11); stroke-width: 1; stroke-dasharray: 3 5; }
+.graph-axis { stroke: rgba(201,160,90,0.35); stroke-width: 1; }
+.graph-line { fill: none; stroke: #9bdfba; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px rgba(155,223,186,0.32)); }
+.graph-dot { fill: #e1a15d; stroke: #0a0e10; stroke-width: 2; }
+.graph-y-label, .graph-x-label, .graph-time-label { fill: #dc9c59; font-family: var(--mono); font-size: 9px; }
+.graph-time-label { fill: #7d9188; font-size: 8px; }
+
+.grid {
+  position: relative;
+  z-index: 1;
+  gap: 9px;
+}
+
+.field-label { font-size: 11px; }
+input { min-height: 40px; border-color: rgba(201,160,90,0.36); background: rgba(2,5,7,0.92); }
+input::placeholder { color: #607078; }
+.run-action { padding-top: 21px; }
+.run { min-height: 40px; }
+.status { font-size: 11px; }
+
+.add-card { border-color: rgba(201,160,90,0.30); background: rgba(6,9,11,0.90); }
+
+@media (max-width: 760px) {
+  body { padding: 24px 15px 42px; }
+  .slip-header { grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+  .slip-header .slip-tag { grid-column: 1 / -1; grid-row: 2; padding-top: 0; }
+  .speed-readout { grid-column: 2; grid-row: 1; }
+}
+
+@media (max-width: 560px) {
+  .speed-graph svg { height: 170px; }
+  .speed-graph-legend { display: none; }
+  .roll-window-layout .b-feature { grid-template-columns: 1fr; }
+  .roll-window-layout .metric { min-height: 96px; }
+}
+
+/* Interaction and flow refinements: entry first, complete results second, trace last. */
+.results:empty { display: none; }
+
+.speed-graph {
+  margin: 16px 0 0;
+  padding: 14px 14px 12px;
+  border-color: rgba(155, 223, 186, 0.28);
+  background:
+    linear-gradient(180deg, rgba(155, 223, 186, 0.075), transparent 58%),
+    linear-gradient(135deg, rgba(201, 160, 90, 0.045), transparent 35%),
+    rgba(1, 5, 6, 0.84);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.035), 0 8px 22px rgba(0,0,0,0.20);
+}
+
+.speed-graph-head { margin-bottom: 8px; }
+.speed-graph-legend { color: #9aaca7; }
+.speed-graph svg { height: 300px; }
+.graph-hitarea {
+  fill: rgba(155, 223, 186, 0.001);
+  cursor: crosshair;
+  pointer-events: all;
+}
+.graph-hover-line {
+  stroke: rgba(224, 193, 124, 0.70);
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  pointer-events: none;
+}
+.graph-hover-dot {
+  fill: #f0a15b;
+  stroke: #f9e0a8;
+  stroke-width: 2;
+  filter: drop-shadow(0 0 5px rgba(240,161,91,0.7));
+  pointer-events: none;
+}
+.graph-tooltip { pointer-events: none; }
+.graph-tooltip-bg {
+  fill: rgba(4, 8, 10, 0.96);
+  stroke: rgba(224, 193, 124, 0.78);
+  stroke-width: 1;
+}
+.graph-tooltip-text {
+  fill: #f5d995;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 560px) {
+  .speed-graph svg { height: 235px; }
+}
+
+/* Two-car head-to-head bay. Each car still has exactly one active input. */
+.cars {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.car .grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.add-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.comparison {
+  margin-top: 18px;
+}
+
+.comparison[hidden] { display: none; }
+
+.vs-panel {
+  overflow: hidden;
+  border: 1px solid rgba(201, 160, 90, 0.50);
+  border-radius: 12px;
+  background:
+    linear-gradient(115deg, rgba(201, 160, 90, 0.075), transparent 30%),
+    linear-gradient(180deg, rgba(8, 12, 14, 0.97), rgba(3, 6, 8, 0.96));
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.vs-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px 13px;
+  border-bottom: 1px solid rgba(201, 160, 90, 0.28);
+  background: linear-gradient(90deg, rgba(201,160,90,0.12), transparent 55%);
+}
+
+.vs-kicker {
+  display: block;
+  color: #c58a52;
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+
+.vs-title {
+  margin: 3px 0 0;
+  color: #f4f7f7;
+  font-size: 20px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.vs-rule {
+  color: var(--brass-light);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+}
+
+.vs-table {
+  padding: 0 14px 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.vs-row {
+  display: grid;
+  grid-template-columns: minmax(9em, 1.35fr) repeat(2, minmax(8em, 1fr)) minmax(8.5em, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-height: 35px;
+  border-top: 1px solid rgba(174, 184, 189, 0.11);
+}
+
+.vs-table-head {
+  min-height: 38px;
+  border-top: 0;
+  color: #758188;
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+}
+
+.vs-table-head span:not(:first-child),
+.vs-number,
+.vs-delta,
+.vs-delta-label {
+  text-align: right;
+}
+
+.vs-car-label {
+  color: var(--green);
+}
+
+.vs-car-label.car-two { color: var(--brass-light); }
+
+.vs-delta-label { color: #8a989d; }
+
+.vs-group-label {
+  margin: 12px 0 4px;
+  padding: 6px 0 5px;
+  color: var(--green);
+  border-bottom: 1px solid rgba(155, 223, 186, 0.20);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: 0.18em;
+}
+
+.vs-group-label.drag-group-label {
+  color: #e1a15d;
+  border-bottom-color: rgba(240, 161, 91, 0.23);
+}
+
+.vs-metric {
+  color: #cbd4d6;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.035em;
+}
+
+.vs-number {
+  color: var(--green);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.vs-number.car-two { color: var(--brass-light); }
+.vs-trap-row .vs-number { color: #f0a15b; }
+
+.vs-delta {
+  color: #aeb8bd;
+  font-family: var(--mono);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.vs-delta.quicker { color: var(--green); }
+.vs-delta.slower { color: #e1a15d; }
+.vs-delta.even { color: var(--blue); }
+
+.vs-note {
+  margin: 4px 18px 16px;
+  color: #7d8a8f;
+  font-size: 11px;
+}
+
+.graph-axis-label {
+  fill: #d7b56d;
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.graph-axis-tick {
+  stroke: rgba(201,160,90,0.38);
+  stroke-width: 1;
+}
+
+@media (max-width: 760px) {
+  .cars { grid-template-columns: 1fr; }
+  .car .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .vs-row {
+    grid-template-columns: minmax(6em, 1fr) repeat(2, minmax(5.2em, 1fr)) minmax(5.4em, 1fr);
+    gap: 6px;
+  }
+  .vs-table { padding-left: 9px; padding-right: 9px; }
+  .vs-metric { font-size: 10px; }
+  .vs-number, .vs-delta { font-size: 10px; }
+  .vs-table-head { font-size: 7px; }
+  .vs-note { margin-left: 12px; margin-right: 12px; }
+}
+
+@media (max-width: 460px) {
+  .car .grid { grid-template-columns: 1fr; }
+  .vs-head { align-items: start; flex-direction: column; gap: 7px; }
+  .vs-rule { align-self: end; }
+}
+
+/* In VS mode each slip gets the full width of its card so the featured
+   numbers stay legible instead of being squeezed beside the trap panel. */
+.cars.two-up .slip-body {
+  grid-template-columns: 1fr;
+}
+
+.cars.two-up .roll-window-layout .metric .time {
+  font-size: clamp(19px, 2.4vw, 26px);
+}
+
+/* Readability pass: keep the roll cards wide, then give every row a real line. */
+.slip-body {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+}
+
+.roll-window-layout {
+  gap: 14px;
+}
+
+.roll-window-layout .b-feature {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0;
+}
+
+.roll-window-layout .metric {
+  min-width: 0;
+  min-height: 136px;
+  padding: 14px;
+}
+
+.roll-window-layout .metric .range,
+.roll-window-layout .metric .time,
+.roll-window-layout .metric .metric-margin {
+  min-width: 0;
+}
+
+.roll-window-layout .metric .time {
+  display: block;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.roll-window-layout .b-rest {
+  padding: 13px 14px 15px;
+}
+
+.roll-window-layout .b-rest-head {
+  margin-bottom: 6px;
+}
+
+.roll-window-layout .b-rest .pull {
+  grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr);
+  gap: 14px;
+  min-height: 38px;
+  line-height: 1.35;
+}
+
+.roll-window-layout .b-rest .pull-name {
+  min-width: 0;
+}
+
+.roll-window-layout .b-rest .pull-time,
+.roll-window-layout .b-rest .pull-margin {
+  white-space: nowrap;
+}
+
+.drag-panel .pull {
+  grid-template-columns: minmax(0, 1fr) max-content max-content;
+  gap: 16px;
+  min-height: 52px;
+}
+
+.drag-panel .pull-name {
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.drag-panel .trap-speed,
+.drag-panel .trap-unit {
+  white-space: nowrap;
+  text-align: right;
+}
+
+@media (max-width: 620px) {
+  .roll-window-layout .b-feature {
+    grid-template-columns: 1fr;
+  }
+
+  .roll-window-layout .metric {
+    min-height: 104px;
+  }
+}
+
+/* Keep the three featured pulls together where there is room; stack only on
+   genuinely narrow phones, where a single-column card is more readable. */
+.roll-window-layout .metric .time {
+  font-size: clamp(18px, 2.4vw, 26px);
+}
+
+@media (max-width: 900px) {
+  .cars.two-up .roll-window-layout .b-feature {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 430px) {
+  .roll-window-layout .b-feature {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 431px) and (max-width: 620px) {
+  .roll-window-layout .b-feature {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 431px) and (max-width: 620px) {
+  .roll-window-layout .metric {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .roll-window-layout .metric .time {
+    font-size: 18px;
+    letter-spacing: -0.035em;
+  }
+}
+
+/* Put the drag bay beside the lower Results card, leaving the featured pulls
+   spanning the full top of the roll-racing area. */
+.slip-body {
+  grid-template-columns: minmax(0, 1.55fr) minmax(160px, 0.75fr);
+  gap: 15px;
+  align-items: start;
+}
+
+.roll-panel,
+.roll-panel .roll-window-layout {
+  display: contents;
+}
+
+.roll-panel > .slip-section-head {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  min-height: 30px;
+  padding: 6px 10px;
+  border: 1px solid rgba(201, 160, 90, 0.24);
+  border-radius: 8px;
+  background: rgba(3, 6, 8, 0.56);
+}
+
+.roll-window-layout > .b-feature {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+.roll-window-layout > .b-rest {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.slip-body > .drag-panel {
+  grid-column: 2;
+  grid-row: 3;
+  align-self: start;
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .cars.two-up .slip-body {
+    grid-template-columns: 1fr;
+  }
+
+  .cars.two-up .roll-panel > .slip-section-head,
+  .cars.two-up .roll-window-layout > .b-feature,
+  .cars.two-up .roll-window-layout > .b-rest,
+  .cars.two-up .slip-body > .drag-panel {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .slip-body {
+    grid-template-columns: 1fr;
+  }
+
+  .roll-panel > .slip-section-head,
+  .roll-window-layout > .b-feature,
+  .roll-window-layout > .b-rest,
+  .slip-body > .drag-panel {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+/* The graph is a readout, so its scale labels must be legible at a glance. */
+.graph-y-label,
+.graph-x-label {
+  font-size: 12px;
+}
+
+.graph-time-label {
+  font-size: 11px;
+}
+
+.graph-axis-label {
+  font-size: 11px;
+}
+
+.graph-tooltip-text {
+  font-size: 12px;
+}
+
+@media (max-width: 620px) {
+  .slip-body {
+    grid-template-columns: minmax(0, 1.3fr) minmax(170px, 0.78fr);
+  }
+
+  .roll-window-layout .b-rest .pull {
+    grid-template-columns: minmax(0, 1fr) max-content;
+    gap: 9px;
+    min-height: 40px;
+  }
+
+  .drag-panel .pull {
+    gap: 9px;
+  }
+}
+
+@media (max-width: 420px) {
+  .slip-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* A lone car should use the full bay; reserve the two-column split for VS mode. */
+.cars.single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* VS redesign: two compact input cards feed one shared, full-width result bay. */
+.car-identity {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px 10px;
+  border-bottom: 1px solid rgba(155, 223, 186, 0.20);
+}
+.car-identity-kicker {
+  color: #78918a;
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+.car-identity-name {
+  color: var(--green);
+  font-size: 17px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.car-identity.car-two { border-bottom-color: rgba(138, 197, 227, 0.32); }
+.car-identity.car-two .car-identity-name { color: var(--blue); }
+.car.car-two { border-color: rgba(138, 197, 227, 0.34); }
+
+/* Do not render a second copy of every result inside the second card. */
+.cars.two-up .car .results { display: none; }
+.cars.two-up .car { min-width: 0; }
+.cars.two-up .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.vs-panel { margin-top: 18px; }
+.vs-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 18px;
+  align-items: center;
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(174, 184, 189, .12);
+  color: #8e9a9f;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.vs-legend-item.car-one { color: var(--green); }
+.vs-legend-item.car-two { color: var(--blue); }
+.vs-legend-item.delta { color: #b0a17b; }
+.vs-results-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, .85fr);
+  gap: 14px;
+  padding: 14px;
+  align-items: start;
+}
+.vs-result-box {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(201, 160, 90, .25);
+  border-radius: 8px;
+  background: rgba(2, 5, 7, .66);
+}
+.vs-result-box.signature-box { grid-column: 1 / -1; }
+.vs-result-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 13px 8px;
+  border-bottom: 1px solid rgba(201, 160, 90, .18);
+  background: linear-gradient(90deg, rgba(201,160,90,.08), transparent 60%);
+}
+.vs-result-title {
+  margin: 0;
+  color: var(--brass-light);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+.vs-result-tag {
+  color: #76858a;
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .10em;
+  white-space: nowrap;
+}
+.vs-result-box .vs-table { padding: 0 13px 11px; }
+.vs-result-box .vs-row {
+  grid-template-columns: minmax(10em, 1.55fr) repeat(2, minmax(7.6em, 1fr)) minmax(8.7em, 1fr);
+  gap: 12px;
+  min-height: 38px;
+}
+.vs-result-box .vs-table-head { min-height: 31px; }
+.vs-result-box .vs-table-head,
+.vs-result-box .vs-table-head .vs-car-label,
+.vs-result-box .vs-table-head .vs-delta-label {
+  font-size: 8px;
+}
+.vs-result-box .vs-metric { font-size: 11px; }
+.vs-result-box .vs-number { font-size: 14px; }
+.vs-result-box .vs-delta { font-size: 10px; }
+.vs-result-box .vs-number.car-one { color: var(--green); }
+.vs-result-box .vs-number.car-two { color: var(--blue); }
+.vs-result-box .vs-trap-row .vs-number.car-one { color: #f0a15b; }
+.vs-result-box .vs-trap-row .vs-number.car-two { color: var(--blue); }
+.vs-result-box .vs-car-label.car-two { color: var(--blue); }
+.vs-result-box .vs-trap-row { min-height: 44px; }
+.vs-result-box.drag-box {
+  border-color: rgba(240, 161, 91, .33);
+  background: linear-gradient(145deg, rgba(240,161,91,.065), transparent 55%), rgba(2,5,7,.66);
+}
+.vs-result-box.drag-box .vs-result-title,
+.vs-result-box.drag-box .vs-result-tag { color: #e1a15d; }
+.vs-result-box.drag-box .vs-result-head { border-bottom-color: rgba(240,161,91,.22); }
+.vs-graph { margin: 0 14px 14px; }
+.graph-line.car-one { stroke: var(--green); }
+.graph-line.car-two { stroke: var(--blue); filter: drop-shadow(0 0 4px rgba(138,197,227,.38)); }
+.graph-dot.car-one { fill: #e1a15d; }
+.graph-dot.car-two { fill: var(--blue); }
+.graph-hover-dot.car-one { fill: #f0a15b; }
+.graph-hover-dot.car-two { fill: var(--blue); stroke: #d6f4ff; }
+.graph-tooltip-text.car-two-text { fill: var(--blue); }
+
+@media (max-width: 780px) {
+  .vs-results-body { grid-template-columns: 1fr; }
+  .vs-result-box.signature-box,
+  .vs-result-box.results-box,
+  .vs-result-box.drag-box { grid-column: 1; }
+}
+@media (max-width: 560px) {
+  .vs-results-body { padding: 10px; gap: 10px; }
+  .vs-legend { padding-left: 12px; padding-right: 12px; }
+  .vs-result-box .vs-table { padding-left: 8px; padding-right: 8px; }
+  .vs-result-box .vs-row {
+    grid-template-columns: minmax(6.5em, 1.2fr) repeat(2, minmax(4.6em, 1fr)) minmax(5.5em, .95fr);
+    gap: 7px;
+  }
+  .vs-result-box .vs-metric { font-size: 10px; }
+  .vs-result-box .vs-number { font-size: 11px; }
+  .vs-result-box .vs-delta { font-size: 9px; }
+  .vs-result-box .vs-table-head { font-size: 7px; }
+}
+@media (max-width: 430px) {
+  .cars.two-up .grid { grid-template-columns: 1fr; }
+  .vs-result-box .vs-row {
+    grid-template-columns: minmax(6em, 1.15fr) repeat(2, minmax(4.2em, 1fr)) minmax(4.8em, .9fr);
+    gap: 5px;
+  }
+  .vs-result-box .vs-result-head { align-items: start; flex-direction: column; gap: 4px; }
+}
+
+/* Distance readouts use the existing speed/time trace integrated in feet. */
+.distance-value {
+  display: block;
+  margin-top: 4px;
+  color: #9aaca7;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.pull-margin {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+}
+.pull-margin-delta {
+  color: #78868c;
+  font-family: var(--mono);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.pull-margin-delta.best { color: var(--brass-light); font-weight: 800; }
+.metric .distance-value { margin-top: 3px; font-size: 11px; }
+
+/* Keep Results slightly narrower while reserving a real-width Drag Racing bay. */
+.vs-results-body {
+  grid-template-columns: minmax(0, 1.22fr) minmax(330px, .92fr);
+}
+.vs-result-box .vs-number,
+.vs-result-box .vs-delta {
+  white-space: normal;
+  line-height: 1.15;
+}
+.vs-time-value,
+.vs-distance-value {
+  display: block;
+  white-space: nowrap;
+}
+.vs-distance-value {
+  margin-top: 4px;
+  color: #8c9b9f;
+  font-size: 10px;
+  font-weight: 700;
+}
+.vs-result-box .vs-number.car-one,
+.vs-result-box .vs-trap-row .vs-number.car-one { color: var(--green); }
+.vs-result-box .vs-number.car-two,
+.vs-result-box .vs-trap-row .vs-number.car-two { color: var(--blue); }
+.vs-result-box.drag-box .vs-row {
+  grid-template-columns: minmax(8em, 1.25fr) repeat(2, minmax(7em, 1fr)) minmax(7.5em, .95fr);
+  gap: 8px;
+}
+.vs-result-box.drag-box .vs-distance-value { color: #aeb8bd; }
+
+@media (max-width: 920px) and (min-width: 781px) {
+  .vs-results-body { grid-template-columns: minmax(0, 1.12fr) minmax(300px, .95fr); }
+  .vs-result-box.drag-box .vs-row {
+    grid-template-columns: minmax(7.2em, 1.15fr) repeat(2, minmax(6.2em, 1fr)) minmax(6.7em, .95fr);
+    gap: 6px;
+  }
+}
+
+/* At tablet widths, stack the shared boxes rather than clipping the four-column data. */
+@media (max-width: 900px) {
+  .vs-results-body { grid-template-columns: 1fr; }
+  .vs-result-box.signature-box,
+  .vs-result-box.results-box,
+  .vs-result-box.drag-box { grid-column: 1; }
+}
+
+/* Keep every drag value inside its row on wide screens too. */
+.vs-result-box.drag-box .vs-row {
+  grid-template-columns: minmax(7em, 1.25fr) repeat(2, minmax(6em, 1fr)) minmax(6.5em, .95fr);
+  gap: 7px;
+}
+@media (max-width: 1100px) and (min-width: 901px) {
+  .vs-result-box.drag-box .vs-row {
+    grid-template-columns: minmax(6.5em, 1.15fr) repeat(2, minmax(5.5em, 1fr)) minmax(6em, .95fr);
+    gap: 6px;
+  }
+}
+
+/* ===== Responsive publish pass: phone upright, phone sideways, desktop ===== */
+
+/* Prefer stacking the two input cards before they get too tight. */
+@media (max-width: 920px) {
+  .cars,
+  .cars.two-up {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Single-car Results: keep name | time+distance without stacking onto the rule. */
+@media (max-width: 620px) {
+  .roll-window-layout .b-rest .pull {
+    grid-template-columns: minmax(0, 1.15fr) max-content;
+    grid-template-rows: auto auto;
+    column-gap: 10px;
+    row-gap: 2px;
+    align-items: start;
+    min-height: 48px;
+    padding: 7px 0 8px;
+  }
+
+  .roll-window-layout .b-rest .pull-name {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+
+  .roll-window-layout .b-rest .pull-time {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .roll-window-layout .b-rest .pull-margin {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    align-items: flex-end;
+  }
+
+  .drag-panel .pull {
+    grid-template-columns: minmax(0, 1.2fr) max-content;
+    grid-template-rows: auto auto;
+    column-gap: 8px;
+    row-gap: 2px;
+    align-items: start;
+    min-height: 52px;
+    padding: 6px 0;
+  }
+
+  .drag-panel .pull-name {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: center;
+    font-size: 9px;
+    line-height: 1.3;
+  }
+
+  .drag-panel .trap-speed {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    font-size: 15px;
+  }
+
+  .drag-panel .trap-unit {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+  }
+}
+
+/* VS comparison on a phone: metric on its own line, then three equal value columns. */
+@media (max-width: 560px) {
+  .vs-results-body {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .vs-result-box {
+    overflow: visible;
+  }
+
+  .vs-result-box .vs-table,
+  .vs-result-box.drag-box .vs-table {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .vs-result-box .vs-row,
+  .vs-result-box.drag-box .vs-row,
+  .vs-result-box .vs-table-head {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas:
+      "metric metric metric"
+      "c1 c2 delta";
+    gap: 4px 8px;
+    min-height: 0;
+    padding: 8px 0 9px;
+    align-items: start;
+  }
+
+  .vs-result-box .vs-metric {
+    grid-area: metric;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .vs-result-box .vs-number.car-one,
+  .vs-result-box .vs-table-head .vs-car-label.car-one {
+    grid-area: c1;
+    text-align: left;
+  }
+
+  .vs-result-box .vs-number.car-two,
+  .vs-result-box .vs-table-head .vs-car-label.car-two {
+    grid-area: c2;
+    text-align: left;
+  }
+
+  .vs-result-box .vs-delta,
+  .vs-result-box .vs-table-head .vs-delta-label {
+    grid-area: delta;
+    text-align: left;
+  }
+
+  .vs-result-box .vs-number,
+  .vs-result-box .vs-delta {
+    font-size: 12px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .vs-result-box .vs-time-value {
+    font-size: 12px;
+  }
+
+  .vs-result-box .vs-distance-value {
+    font-size: 10px;
+  }
+
+  .vs-result-box .vs-table-head {
+    font-size: 8px;
+    letter-spacing: 0.06em;
+  }
+
+  /* Fixed trap distances are identical for both cars; hide the duplicate on narrow screens
+     so the mph difference keeps a full column. */
+  .vs-result-box.drag-box .vs-number .vs-distance-value {
+    display: none;
+  }
+
+  .vs-graph {
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+}
+
+/* Phone sideways: keep usable type and avoid cramped header/input chrome. */
+@media (max-width: 920px) and (max-height: 480px) {
+  body {
+    padding: 14px 12px 28px;
+  }
+
+  h1 {
+    font-size: 28px;
+  }
+
+  .top {
+    gap: 8px;
+    padding-bottom: 12px;
+  }
+
+  .driver-line {
+    margin-top: 8px;
+    font-size: 11px;
+  }
+
+  .car {
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .speed-graph svg {
+    height: 220px;
+  }
+}
+
+/* Desktop and tablet: keep Results + Drag readable without clipping. */
+@media (min-width: 561px) {
+  .vs-result-box {
+    overflow: visible;
+  }
+
+  .vs-result-box .vs-row,
+  .vs-result-box.drag-box .vs-row {
+    grid-template-columns: minmax(0, 1.35fr) repeat(2, minmax(0, 1fr)) minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .vs-result-box .vs-number,
+  .vs-result-box .vs-delta {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .vs-time-value,
+  .vs-distance-value {
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 901px) {
+  .vs-results-body {
+    grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.95fr);
+  }
+}
+
+/* Graph labels stay readable after the SVG scales down. */
+.speed-graph svg {
+  min-height: 210px;
+}
+
+.graph-y-label,
+.graph-x-label {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.graph-axis-label {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.graph-tooltip-text {
+  font-size: 13px;
+}
+
+@media (max-width: 560px) {
+  .speed-graph {
+    padding: 12px 8px 10px;
+  }
+
+  .speed-graph svg {
+    height: 250px;
+  }
+
+  .graph-y-label,
+  .graph-x-label {
+    font-size: 12px;
+  }
+
+  .graph-axis-label {
+    font-size: 11px;
+  }
+}
+
+/* Avoid .car overflow clipping focus rings and value edges. */
+.car {
+  overflow: visible;
+}
+
+.results,
+.vs-panel {
+  overflow: visible;
+}
