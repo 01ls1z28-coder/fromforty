@@ -680,12 +680,14 @@
       var graph = el('div', 'speed-graph vs-graph');
       var graphHead = el('div', 'speed-graph-head');
       graphHead.appendChild(el('span', 'speed-graph-title', 'SPEED / TIME TRACE'));
+      var gapLabel = el('span', 'speed-graph-gap-label', 'GAP — HOVER GRAPH');
+      graphHead.appendChild(gapLabel);
       graphHead.appendChild(el('span', 'speed-graph-legend', 'X TIME (S)  •  Y SPEED (MPH)  •  HOVER FOR BOTH CARS'));
       graph.appendChild(graphHead);
       var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('viewBox', '0 0 760 300');
       svg.setAttribute('role', 'img');
-      svg.setAttribute('aria-label', 'Interactive projected speed versus time for both cars');
+      svg.setAttribute('aria-label', 'Interactive projected speed versus time and distance gap for both cars');
       var ns = 'http://www.w3.org/2000/svg';
       function svgEl(tag, attrs) {
         var node = document.createElementNS(ns, tag);
@@ -749,15 +751,16 @@
       var tooltip = document.createElementNS(ns, 'g');
       tooltip.setAttribute('class', 'graph-tooltip');
       tooltip.setAttribute('visibility', 'hidden');
-      var tooltipBg = svgEl('rect', { x: 0, y: 0, width: 236, height: 48, rx: 4, class: 'graph-tooltip-bg' });
+      var tooltipBg = svgEl('rect', { x: 0, y: 0, width: 278, height: 68, rx: 4, class: 'graph-tooltip-bg' });
       var tooltipText = svgEl('text', { x: 9, y: 17, class: 'graph-tooltip-text' });
       var tooltipText2 = svgEl('text', { x: 9, y: 34, class: 'graph-tooltip-text car-two-text' });
-      tooltip.appendChild(tooltipBg); tooltip.appendChild(tooltipText); tooltip.appendChild(tooltipText2);
+      var tooltipText3 = svgEl('text', { x: 9, y: 55, class: 'graph-tooltip-text gap-text' });
+      tooltip.appendChild(tooltipBg); tooltip.appendChild(tooltipText); tooltip.appendChild(tooltipText2); tooltip.appendChild(tooltipText3);
       svg.appendChild(hoverLine);
       hoverDots.forEach(function (dot) { svg.appendChild(dot); });
       svg.appendChild(tooltip);
       var hit = svgEl('rect', { x: left, y: top, width: right - left, height: bottom - top,
-        class: 'graph-hitarea', 'aria-label': 'Hover to inspect both car speeds and time' });
+        class: 'graph-hitarea', 'aria-label': 'Hover to inspect both car speeds, time, and distance gap' });
       svg.appendChild(hit);
 
       function pointAtViewX(viewX, samples) {
@@ -769,6 +772,13 @@
           mph: a.mph + (b.mph - a.mph) * ratio,
           elapsed: a.elapsed + (b.elapsed - a.elapsed) * ratio };
       }
+      function gapLabelFor(distanceGap) {
+        if (distanceGap == null || !isFinite(distanceGap)) return 'GAP UNAVAILABLE';
+        var feet = Math.abs(distanceGap).toFixed(1);
+        if (Math.abs(distanceGap) < 0.05) return 'EVEN • 0.0 FT';
+        return distanceGap > 0 ? 'CAR 2 AHEAD BY ' + feet + ' FT' : 'CAR 1 AHEAD BY ' + feet + ' FT';
+      }
+
       function updateHover(event) {
         var viewX, ctm = svg.getScreenCTM && svg.getScreenCTM();
         if (ctm && ctm.inverse) {
@@ -779,14 +789,22 @@
           viewX = (event.clientX - bounds.left) / bounds.width * 760;
         }
         var pointsAtX = allSamples.map(function (samples) { return pointAtViewX(viewX, samples); });
+        var distancesAtX = pointsAtX.map(function (item, index) {
+          return modelDistanceAt(rows[index], item.mph);
+        });
+        var distanceGap = distancesAtX[1] == null || distancesAtX[0] == null
+          ? null : distancesAtX[1] - distancesAtX[0];
+        var gapLabelText = gapLabelFor(distanceGap);
         var point = pointsAtX[0];
-        var tooltipX = Math.max(left, Math.min(right - 236, point.x - 118));
-        var tooltipY = Math.max(top, Math.min(bottom - 52, Math.min(pointsAtX[0].y, pointsAtX[1].y) - 58));
+        var tooltipX = Math.max(left, Math.min(right - 278, point.x - 139));
+        var tooltipY = Math.max(top, Math.min(bottom - 74, Math.min(pointsAtX[0].y, pointsAtX[1].y) - 80));
         hoverLine.setAttribute('x1', point.x); hoverLine.setAttribute('x2', point.x);
         pointsAtX.forEach(function (item, index) { hoverDots[index].setAttribute('cx', item.x); hoverDots[index].setAttribute('cy', item.y); });
         tooltip.setAttribute('transform', 'translate(' + tooltipX.toFixed(2) + ' ' + tooltipY.toFixed(2) + ')');
         tooltipText.textContent = 'CAR 1  ' + pointsAtX[0].elapsed.toFixed(2) + ' s  •  ' + pointsAtX[0].mph.toFixed(1) + ' mph';
         tooltipText2.textContent = 'CAR 2  ' + pointsAtX[1].elapsed.toFixed(2) + ' s  •  ' + pointsAtX[1].mph.toFixed(1) + ' mph';
+        tooltipText3.textContent = gapLabelText;
+        gapLabel.textContent = gapLabelText;
         tooltip.setAttribute('visibility', 'visible');
       }
       hit.addEventListener('pointermove', updateHover);

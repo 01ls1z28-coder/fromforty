@@ -2292,3 +2292,36 @@ input::placeholder { color: #607078; }
 .graph-axis-label {
   dominant-baseline: middle;
 }
+
+/* VS graph readout: keep the live feet-apart result visible above the trace. */
+.speed-graph-head {
+  flex-wrap: wrap;
+}
+
+.speed-graph-gap-label {
+  flex: 1 1 auto;
+  min-width: 13em;
+  color: #f5d995;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .06em;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.graph-tooltip-text.gap-text {
+  fill: #f5d995;
+}
+
+@media (max-width: 560px) {
+  .speed-graph-gap-label {
+    order: 2;
+    min-width: 0;
+    font-size: 9px;
+  }
+
+  .vs-graph .speed-graph-head {
+    align-items: center;
+  }
+}
