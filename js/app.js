@@ -218,7 +218,7 @@
         svg.appendChild(label);
       });
       svg.appendChild(svgEl('line', { x1: left, y1: bottom, x2: right, y2: bottom, class: 'graph-axis' }));
-      var yAxisLabel = svgEl('text', { x: 14, y: top, class: 'graph-axis-label', 'text-anchor': 'start' });
+      var yAxisLabel = svgEl('text', { x: 15, y: (top + bottom) / 2, class: 'graph-axis-label', 'text-anchor': 'middle', transform: 'rotate(-90 15 ' + ((top + bottom) / 2) + ')' });
       yAxisLabel.textContent = 'SPEED (MPH)';
       svg.appendChild(yAxisLabel);
       var samples = [];
@@ -411,10 +411,18 @@
   }
 
   function ensureRunAction() {
-    var target = document.querySelector('.car .grid');
-    if (!target) return;
+    var target;
     if (!sharedRunAction) sharedRunAction = makeRunAction();
+    if (cars.length === 2) {
+      target = document.getElementById('cars');
+      if (target && sharedRunAction.parentNode !== target) target.appendChild(sharedRunAction);
+      sharedRunAction.classList.add('vs-run-action');
+      return;
+    }
+    target = document.querySelector('.car .grid');
+    if (!target) return;
     if (sharedRunAction.parentNode !== target) target.appendChild(sharedRunAction);
+    sharedRunAction.classList.remove('vs-run-action');
   }
 
   function mountCar(car) {
@@ -699,7 +707,7 @@
         svg.appendChild(label);
       });
       svg.appendChild(svgEl('line', { x1: left, y1: bottom, x2: right, y2: bottom, class: 'graph-axis' }));
-      var yAxisLabel = svgEl('text', { x: 14, y: top, class: 'graph-axis-label', 'text-anchor': 'start' });
+      var yAxisLabel = svgEl('text', { x: 15, y: (top + bottom) / 2, class: 'graph-axis-label', 'text-anchor': 'middle', transform: 'rotate(-90 15 ' + ((top + bottom) / 2) + ')' });
       yAxisLabel.textContent = 'SPEED (MPH)';
       svg.appendChild(yAxisLabel);
       var colors = ['car-one', 'car-two'];
