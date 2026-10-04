@@ -463,25 +463,28 @@
 
     if (!sharedRunAction) primary.appendChild(sharedRunAction = makeRunAction());
 
-    var remove = el('button', 'remove', 'Remove');
-    remove.type = 'button';
-    remove.addEventListener('click', function () {
-      if (cars.length <= 1) return;
-      cars = cars.filter(function (c) { return c.id !== car.id; });
-      card.remove();
-      ensureRunAction();
-      var comparison = document.getElementById('comparison');
-      if (comparison) { comparison.hidden = true; comparison.textContent = ''; }
-      updateAdd();
-    });
+    var remove = null;
+    if (car.id !== 1) {
+      remove = el('button', 'remove', 'Remove');
+      remove.type = 'button';
+      remove.addEventListener('click', function () {
+        if (cars.length <= 1) return;
+        cars = cars.filter(function (c) { return c.id !== car.id; });
+        card.remove();
+        ensureRunAction();
+        var comparison = document.getElementById('comparison');
+        if (comparison) { comparison.hidden = true; comparison.textContent = ''; }
+        updateAdd();
+      });
+    }
 
     var identity = el('div', 'car-identity car-' + (car.id === 1 ? 'one' : 'two'));
     identity.appendChild(el('span', 'car-identity-kicker', 'MEASUREMENT INPUT'));
-    identity.appendChild(el('strong', 'car-identity-name', 'Car ' + (car.id === 1 ? '1' : '2')));
+    identity.appendChild(el('strong', 'car-identity-name', car.id === 1 ? 'Vehicle' : 'Opponent Vehicle'));
     // Keep the remove control in the input grid. In VS mode the sixth grid
     // slot sits directly beneath the 1/4-mile trap input instead of creating
     // a separate row below the card.
-    primary.appendChild(remove);
+    if (remove) primary.appendChild(remove);
     card.appendChild(identity);
     card.appendChild(primary);
     card.appendChild(results);
@@ -563,13 +566,13 @@
     titleWrap.appendChild(el('span', 'vs-kicker', 'HEAD-TO-HEAD'));
     titleWrap.appendChild(el('h2', 'vs-title', 'VS Mode'));
     head.appendChild(titleWrap);
-    head.appendChild(el('span', 'vs-rule', 'CAR 2 − CAR 1'));
+    head.appendChild(el('span', 'vs-rule', 'OPPONENT VEHICLE − VEHICLE'));
     panel.appendChild(head);
 
     var legend = el('div', 'vs-legend');
-    legend.appendChild(el('span', 'vs-legend-item car-one', '● Car 1'));
-    legend.appendChild(el('span', 'vs-legend-item car-two', '● Car 2'));
-    legend.appendChild(el('span', 'vs-legend-item delta', 'Δ = Car 2 − Car 1'));
+    legend.appendChild(el('span', 'vs-legend-item car-one', '● Vehicle'));
+    legend.appendChild(el('span', 'vs-legend-item car-two', '● Opponent Vehicle'));
+    legend.appendChild(el('span', 'vs-legend-item delta', 'Δ = Opponent Vehicle − Vehicle'));
     panel.appendChild(legend);
 
     var body = el('div', 'vs-results-body');
@@ -583,8 +586,8 @@
       var table = el('div', 'vs-table');
       var tableHead = el('div', 'vs-row vs-table-head');
       tableHead.appendChild(el('span', 'vs-metric', 'Pull / trap'));
-      tableHead.appendChild(el('span', 'vs-car-label car-one', 'Car 1'));
-      tableHead.appendChild(el('span', 'vs-car-label car-two', 'Car 2'));
+      tableHead.appendChild(el('span', 'vs-car-label car-one', 'Vehicle'));
+      tableHead.appendChild(el('span', 'vs-car-label car-two', 'Opponent Vehicle'));
       tableHead.appendChild(el('span', 'vs-delta-label', 'Difference'));
       table.appendChild(tableHead);
       block.appendChild(table);
@@ -779,7 +782,7 @@
         if (distanceGap == null || !isFinite(distanceGap)) return 'GAP UNAVAILABLE';
         var feet = Math.abs(distanceGap).toFixed(1);
         if (Math.abs(distanceGap) < 0.05) return 'EVEN • 0.0 FT';
-        return distanceGap > 0 ? 'CAR 2 AHEAD BY ' + feet + ' FT' : 'CAR 1 AHEAD BY ' + feet + ' FT';
+        return distanceGap > 0 ? 'OPPONENT VEHICLE AHEAD BY ' + feet + ' FT' : 'VEHICLE AHEAD BY ' + feet + ' FT';
       }
 
       function updateHover(event) {
@@ -804,8 +807,8 @@
         hoverLine.setAttribute('x1', point.x); hoverLine.setAttribute('x2', point.x);
         pointsAtX.forEach(function (item, index) { hoverDots[index].setAttribute('cx', item.x); hoverDots[index].setAttribute('cy', item.y); });
         tooltip.setAttribute('transform', 'translate(' + tooltipX.toFixed(2) + ' ' + tooltipY.toFixed(2) + ')');
-        tooltipText.textContent = 'CAR 1  ' + pointsAtX[0].elapsed.toFixed(2) + ' s  •  ' + pointsAtX[0].mph.toFixed(1) + ' mph';
-        tooltipText2.textContent = 'CAR 2  ' + pointsAtX[1].elapsed.toFixed(2) + ' s  •  ' + pointsAtX[1].mph.toFixed(1) + ' mph';
+        tooltipText.textContent = 'VEHICLE  ' + pointsAtX[0].elapsed.toFixed(2) + ' s  •  ' + pointsAtX[0].mph.toFixed(1) + ' mph';
+        tooltipText2.textContent = 'OPPONENT VEHICLE  ' + pointsAtX[1].elapsed.toFixed(2) + ' s  •  ' + pointsAtX[1].mph.toFixed(1) + ' mph';
         tooltipText3.textContent = gapLabelText;
         gapLabel.textContent = gapLabelText;
         tooltip.setAttribute('visibility', 'visible');
@@ -817,7 +820,7 @@
     }
 
     addComparisonGraph();
-    panel.appendChild(el('p', 'vs-note', 'Differences are Car 2 minus Car 1. Positive roll time means Car 2 is slower; positive trap speed means Car 2 is faster.'));
+    panel.appendChild(el('p', 'vs-note', 'Differences are Opponent Vehicle minus Vehicle. Positive roll time means Opponent Vehicle is slower; positive trap speed means Opponent Vehicle is faster.'));
     host.appendChild(panel);
     host.hidden = false;
     host.classList.add('is-visible');
@@ -840,7 +843,7 @@
         };
       }
       var row = Roll.runCar(input);
-      if (row.ok && !row.name) row.name = 'Car ' + (i + 1);
+      if (row.ok && !row.name) row.name = i === 0 ? 'Vehicle' : 'Opponent Vehicle';
       return row;
     });
     var margins = marginsFor(rows);
