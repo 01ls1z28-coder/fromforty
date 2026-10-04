@@ -8,10 +8,18 @@
 </head>
 <body>
   <header class="top">
-    <div>
+    <div class="brand-block">
       <p class="mark">Roll racing</p>
       <h1>FromForty</h1>
     </div>
+    <section class="text-scale" aria-label="Result text size">
+      <div class="text-scale-head">
+        <label for="result-scale">Result text size</label>
+        <output id="result-scale-value" for="result-scale">110%</output>
+      </div>
+      <input id="result-scale" type="range" min="1" max="1.25" step="0.01" value="1.10" aria-describedby="result-scale-help">
+      <p id="result-scale-help">Adjusts signature times, Results rows, drag speeds, and differences.</p>
+    </section>
     <p class="lede">Enter mph from a real timeslip or a measured roll time. Compare two cars side by side.</p>
   </header>
 
@@ -21,15 +29,6 @@
   </nav>
 
   <p class="driver-line">Enter one measured mph mark or one roll time. The other fields clear automatically, and the same input projects the roll windows and trap speeds.</p>
-
-  <section class="text-scale" aria-label="Result text size">
-    <div class="text-scale-head">
-      <label for="result-scale">Result text size</label>
-      <output id="result-scale-value" for="result-scale">110%</output>
-    </div>
-    <input id="result-scale" type="range" min="1" max="1.25" step="0.01" value="1.10" aria-describedby="result-scale-help">
-    <p id="result-scale-help">Adjusts signature times, Results rows, drag speeds, and differences.</p>
-  </section>
 
   <div id="cars" class="cars"></div>
 
