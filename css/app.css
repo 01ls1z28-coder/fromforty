@@ -86,6 +86,27 @@ h1 {
   font-size: 14px;
 }
 
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 12px;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.site-nav a {
+  color: var(--blue);
+  text-decoration: none;
+}
+
+.site-nav a:hover {
+  color: var(--brass-light);
+  text-decoration: underline;
+}
+
 .equation {
   margin: 17px 2px 0;
   padding: 0 2px;
@@ -212,7 +233,7 @@ h1 {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 11px;
 }
 
@@ -230,8 +251,8 @@ h1 {
   letter-spacing: 0.025em;
 }
 
-.field:nth-child(-n+4) .field-label { color: #f0a15b; }
-.field:nth-child(5) .field-label { color: var(--green); }
+.field:nth-child(-n+3) .field-label { color: #f0a15b; }
+.field:nth-child(n+4):nth-child(-n+5) .field-label { color: var(--green); }
 
 input,
 button {
@@ -577,30 +598,91 @@ footer {
   }
 }
 
-/* Suite cross-links — keep tiny; do not restyle the calculator */
-.suite-nav {
+/* Option B roll results: signature pulls first, supporting windows underneath. */
+.roll-window-layout {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 14px;
-  padding: 0;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.roll-window-layout .b-feature {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  padding: 12px;
+}
+
+.roll-window-layout .metric {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 128px;
+  padding: 13px;
+  border: 1px solid rgba(155, 223, 186, 0.19);
+  border-radius: 7px;
+  background: linear-gradient(160deg, rgba(155, 223, 186, 0.08), rgba(0, 0, 0, 0.10));
+}
+
+.roll-window-layout .metric .range {
+  color: #edf1f2;
+  font-size: 13px;
+}
+
+.roll-window-layout .metric .time {
+  color: var(--green);
+  font-size: clamp(20px, 2.8vw, 30px);
+}
+
+.roll-window-layout .metric .metric-label {
+  color: var(--green);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
 }
-.suite-nav a {
+
+.roll-window-layout .metric .metric-margin {
+  min-height: 1.2em;
+  color: #78868c;
+  font-family: var(--mono);
+  font-size: 10px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.roll-window-layout .metric .metric-margin.best {
   color: var(--brass-light);
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
+  font-weight: 800;
 }
-.suite-nav a:hover,
-.suite-nav a:focus-visible {
-  border-bottom-color: var(--brass-dim);
-  color: #f0d9a0;
+
+.roll-window-layout .b-rest {
+  padding: 12px 14px;
 }
-.suite-nav-sep {
-  color: var(--brass-dim);
-  font-weight: 400;
+
+.roll-window-layout .b-rest-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.roll-window-layout .b-rest .pull {
+  min-height: 28px;
+}
+
+.roll-window-layout .b-rest .pull-time {
+  font-size: 14px;
+}
+
+@media (max-width: 560px) {
+  .roll-window-layout .b-feature {
+    grid-template-columns: 1fr;
+  }
+
+  .roll-window-layout .metric {
+    min-height: 92px;
+  }
 }

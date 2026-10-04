@@ -3,7 +3,7 @@
  *
  * Trap-only mode
  * --------------
- * Inputs: a trap speed v_t at a timeslip distance D, or a measured 60–130 time.
+ * Inputs: a trap speed v_t at a timeslip distance D, or a measured 60–130 / 100–150 time.
  * Supported timeslip marks are 660 ft (1/8 mile), 1000 ft, and
  * 1320 ft (1/4 mile). If several are filled, the farthest mark wins.
  *
@@ -90,12 +90,13 @@
         };
       }
     }
-    return { ok: false, issues: ['Enter a timeslip trap speed or a 60–130 time.'] };
+    return { ok: false, issues: ['Enter a timeslip trap speed or a measured roll time.'] };
   }
 
   /**
-   * Resolve the user input. A measured 60–130 can stand in for a trap, but
-   * it must never be turned into a drag trap speed for display.
+   * Resolve the user input. A measured roll time can stand in for a trap,
+   * but it must not create elapsed drag times or 60-foot data. Trap mph wins
+   * over either roll-time input; 60–130 wins over 100–150.
    */
   function resolveInput(input) {
     input = input || {};
@@ -116,22 +117,48 @@
       };
     }
 
-    var time = parseNumber(input.t60_130);
+    var t60 = parseNumber(input.t60_130);
+    var t100 = parseNumber(input.t100_150);
     var issues = [];
-    if (time.invalid) issues.push('60–130 time must be a number.');
-    if (time.value != null && !(time.value > 0)) {
-      issues.push('60–130 time must be greater than zero.');
-    }
-    if (issues.length) return { ok: false, issues: issues };
-    if (time.value != null) {
+
+    // With no trap mph, 60–130 is the authoritative roll input whenever it
+    // is present. Only fall through to 100–150 when the 60–130 box is empty.
+    if (!t60.missing) {
+      if (t60.invalid) issues.push('60–130 time must be a number.');
+      if (t60.value != null && !(t60.value > 0)) {
+        issues.push('60–130 time must be greater than zero.');
+      }
+      if (issues.length) return { ok: false, issues: issues };
       return {
         ok: true,
         mode: 'time',
         trap: null,
-        referenceSeconds: time.value
+        referenceSeconds: t60.value,
+        referenceStartMph: 60,
+        referenceEndMph: 130,
+        referenceKey: 't60_130',
+        referenceLabel: '60–130'
       };
     }
-    return { ok: false, issues: ['Enter a trap speed or a 60–130 time.'] };
+
+    if (!t100.missing) {
+      if (t100.invalid) issues.push('100–150 time must be a number.');
+      if (t100.value != null && !(t100.value > 0)) {
+        issues.push('100–150 time must be greater than zero.');
+      }
+      if (issues.length) return { ok: false, issues: issues };
+      return {
+        ok: true,
+        mode: 'time',
+        trap: null,
+        referenceSeconds: t100.value,
+        referenceStartMph: 100,
+        referenceEndMph: 150,
+        referenceKey: 't100_150',
+        referenceLabel: '100–150'
+      };
+    }
+    return { ok: false, issues: ['Enter a trap speed or a measured roll time.'] };
   }
 
   function carIssues(input) {
@@ -145,6 +172,18 @@
     var D = distanceFt * FT_TO_M;
     if (!(v > 0) || !(D > 0)) return null;
     return (v * v * v) / (3 * D);
+  }
+
+  /**
+   * Project an equivalent trap speed at another timeslip mark by round-tripping
+   * through the existing corrected 60–130 equation. This exposes the same
+   * projection used by a measured 60–130 input without creating ET, 60-foot,
+   * or other split data.
+   */
+  function trapSpeedAtDistance(trapMph, sourceDistanceFt, targetDistanceFt) {
+    var reference = rollTime(sourceDistanceFt, 60, 130, trapMph);
+    if (!reference || reference.seconds == null) return null;
+    return trapSpeedFromRollTime(targetDistanceFt, reference.seconds, 60, 130);
   }
 
   function correctRoll(seconds, v0Mph, v1Mph, trapMph) {
@@ -282,19 +321,42 @@
       mode: trap ? 'trap-only-corrected' : 'measured-60-130',
       inputMode: resolved.mode,
       referenceSeconds: resolved.referenceSeconds,
+      referenceStartMph: resolved.referenceStartMph || null,
+      referenceEndMph: resolved.referenceEndMph || null,
+      referenceKey: resolved.referenceKey || null,
+      referenceLabel: resolved.referenceLabel || null,
       t60_130: null,
       t100_150: null
     };
     if (trap) {
-      result.dragTraps = [{ source: trap.source, trapMph: trap.trapMph }];
+      // A single entered trap determines the equivalent speed at each other
+      // mark through the same constant-power equation. These are trap speeds
+      // only; no elapsed time or 60-foot result is manufactured.
+      TRAP_MARKS.forEach(function (mark) {
+        var trapMph = trapSpeedAtDistance(trap.trapMph, trap.distanceFt, mark.distanceFt);
+        if (trapMph != null) {
+          result.dragTraps.push({
+            source: mark.source,
+            trapMph: trapMph,
+            projected: mark.source !== trap.source,
+            fromSource: trap.source
+          });
+        }
+      });
     } else {
       [
         { source: 'eighth', distanceFt: EIGHTH_FT },
         { source: '1000', distanceFt: THOUSAND_FT },
         { source: 'quarter', distanceFt: QUARTER_FT }
       ].forEach(function (mark) {
-        var trapMph = trapSpeedFromRollTime(mark.distanceFt, resolved.referenceSeconds, 60, 130);
-        if (trapMph != null) result.dragTraps.push({ source: mark.source, trapMph: trapMph });
+        var trapMph = trapSpeedFromRollTime(mark.distanceFt, resolved.referenceSeconds,
+          resolved.referenceStartMph, resolved.referenceEndMph);
+        if (trapMph != null) result.dragTraps.push({
+          source: mark.source,
+          trapMph: trapMph,
+          projected: true,
+          fromSource: resolved.referenceLabel
+        });
       });
     }
 
@@ -318,11 +380,13 @@
       var key = pulls[i][0];
       var roll = trap
         ? rollTime(trap.distanceFt, pulls[i][1], pulls[i][2], trap.trapMph)
-        : { seconds: rollTimeFromReference(resolved.referenceSeconds, 60, 130, pulls[i][1], pulls[i][2]) };
+        : { seconds: rollTimeFromReference(resolved.referenceSeconds,
+          resolved.referenceStartMph, resolved.referenceEndMph,
+          pulls[i][1], pulls[i][2]) };
       result[key] = roll.seconds;
       result.notes[key] = roll.note || null;
     }
-    if (!trap) result.t60_130 = resolved.referenceSeconds;
+    if (!trap) result[resolved.referenceKey] = resolved.referenceSeconds;
     return result;
   }
 
@@ -332,6 +396,7 @@
     QUARTER_FT: QUARTER_FT,
     TRAP_MARKS: TRAP_MARKS,
     rollTime: rollTime,
+    trapSpeedAtDistance: trapSpeedAtDistance,
     trapSpeedFromRollTime: trapSpeedFromRollTime,
     rollTimeFromReference: rollTimeFromReference,
     ROLL_EXPONENT: ROLL_EXPONENT,
