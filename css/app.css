@@ -1985,3 +1985,156 @@ input::placeholder { color: #607078; }
 .vs-panel {
   overflow: visible;
 }
+
+
+/* Result readability controls: default one step larger, with a user-adjustable scale. */
+:root { --result-scale: 1.10; }
+
+.text-scale {
+  display: grid;
+  gap: 7px;
+  max-width: 520px;
+  margin: 16px 0 0;
+  padding: 11px 13px 10px;
+  border: 1px solid rgba(201, 160, 90, 0.24);
+  border-radius: 8px;
+  background: rgba(5, 8, 10, 0.72);
+}
+
+.text-scale-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.text-scale label {
+  color: var(--brass-light);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.text-scale output {
+  color: var(--green);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.text-scale input[type="range"] {
+  width: 100%;
+  min-height: 0;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  accent-color: var(--brass-light);
+  background: transparent;
+  box-shadow: none;
+}
+
+.text-scale input[type="range"]:focus {
+  border: 0;
+  box-shadow: none;
+}
+
+.text-scale p {
+  margin: 0;
+  color: #7f8d92;
+  font-size: 11px;
+}
+
+/* VS mode gets a little more type while Results gives back some whitespace. */
+@media (min-width: 901px) {
+  .vs-results-body {
+    grid-template-columns: minmax(0, 1.10fr) minmax(335px, .90fr);
+    gap: 12px;
+    padding: 12px;
+  }
+}
+
+.vs-result-box .vs-result-head {
+  padding: 9px 12px 7px;
+}
+
+.vs-result-box .vs-table {
+  padding: 0 12px 8px;
+}
+
+.vs-result-box .vs-row {
+  gap: 8px;
+  min-height: 35px;
+}
+
+.vs-result-box .vs-table-head {
+  min-height: 28px;
+}
+
+.vs-result-box .vs-metric {
+  font-size: calc(11px * var(--result-scale));
+}
+
+.vs-result-box .vs-number {
+  font-size: calc(14px * var(--result-scale));
+  line-height: 1.15;
+}
+
+.vs-result-box .vs-delta {
+  font-size: calc(11px * var(--result-scale));
+  line-height: 1.15;
+}
+
+.vs-result-box .vs-distance-value {
+  font-size: calc(10px * var(--result-scale));
+}
+
+.vs-result-box.drag-box .vs-row {
+  min-height: 47px;
+  gap: 7px;
+}
+
+/* Single-car results follow the same control, without changing their layout. */
+.results .roll-window-layout .metric .time {
+  font-size: clamp(18px, calc(2.4vw * var(--result-scale)), calc(26px * var(--result-scale)));
+}
+
+.results .roll-window-layout .metric .range,
+.results .roll-window-layout .b-rest .pull-name {
+  font-size: calc(12px * var(--result-scale));
+}
+
+.results .roll-window-layout .b-rest .pull-time,
+.results .roll-window-layout .b-rest .pull-margin,
+.results .roll-window-layout .metric .metric-margin {
+  font-size: calc(13px * var(--result-scale));
+}
+
+.results .drag-panel .trap-speed {
+  font-size: calc(18px * var(--result-scale));
+}
+
+@media (max-width: 900px) {
+  .vs-results-body {
+    gap: 11px;
+  }
+}
+
+@media (max-width: 560px) {
+  .vs-result-box .vs-number {
+    font-size: calc(12px * var(--result-scale));
+  }
+
+  .vs-result-box .vs-delta {
+    font-size: calc(11px * var(--result-scale));
+  }
+
+  .vs-result-box .vs-time-value {
+    font-size: inherit;
+  }
+
+  .vs-result-box .vs-distance-value {
+    font-size: calc(10px * var(--result-scale));
+  }
+}

@@ -836,6 +836,18 @@
   }
 
   function init() {
+    var scale = document.getElementById('result-scale');
+    var scaleValue = document.getElementById('result-scale-value');
+    function applyResultScale() {
+      var value = Number(scale && scale.value);
+      if (!(value > 0)) value = 1.10;
+      document.documentElement.style.setProperty('--result-scale', String(value));
+      if (scaleValue) scaleValue.textContent = Math.round(value * 100) + '%';
+    }
+    if (scale) {
+      scale.addEventListener('input', applyResultScale);
+      applyResultScale();
+    }
     addCar();
     document.getElementById('add').addEventListener('click', addCar);
   }
