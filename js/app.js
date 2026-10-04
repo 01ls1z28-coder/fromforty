@@ -465,12 +465,13 @@
 
     var remove = null;
     if (car.id !== 1) {
-      remove = el('button', 'remove', 'Remove');
+      remove = el('button', 'remove', 'Remove Opponent');
       remove.type = 'button';
       remove.addEventListener('click', function () {
         if (cars.length <= 1) return;
         cars = cars.filter(function (c) { return c.id !== car.id; });
         card.remove();
+        remove.remove();
         ensureRunAction();
         var comparison = document.getElementById('comparison');
         if (comparison) { comparison.hidden = true; comparison.textContent = ''; }
@@ -481,10 +482,13 @@
     var identity = el('div', 'car-identity car-' + (car.id === 1 ? 'one' : 'two'));
     identity.appendChild(el('span', 'car-identity-kicker', 'MEASUREMENT INPUT'));
     identity.appendChild(el('strong', 'car-identity-name', car.id === 1 ? 'Vehicle' : 'Opponent Vehicle'));
-    // Keep the remove control in the input grid. In VS mode the sixth grid
-    // slot sits directly beneath the 1/4-mile trap input instead of creating
-    // a separate row below the card.
-    if (remove) primary.appendChild(remove);
+    // Remove Opponent lives under Run in the center column, only while the
+    // second car is present. It is not a field inside the opponent card.
+    if (remove && sharedRunAction) {
+      var runStatus = sharedRunAction.querySelector('.status');
+      if (runStatus) sharedRunAction.insertBefore(remove, runStatus);
+      else sharedRunAction.appendChild(remove);
+    }
     card.appendChild(identity);
     card.appendChild(primary);
     card.appendChild(results);
