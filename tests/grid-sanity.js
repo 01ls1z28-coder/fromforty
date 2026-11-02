@@ -30,9 +30,14 @@
  *          1.80 @ 114; purpose-built drag cars run quicker, ~1.36-1.50)
  *        prepped Street, trap 100 mph: 1.90-2.50 s (Civic Si / Mustang EcoBoost
  *          stock street-tire strip slips 1.93-2.27)
- *        Perfect Traction, any trap: 0.95-2.40 s (idealised power-only launch;
- *          built race cars on prepped tracks cut ~1.16-1.36: T1 GT-R 1.203,
- *          Kravchenko R32 1.16, Chevelle A/B 1.36)
+ *        Perfect Traction, trap 90-170: 1.00-2.40 s
+ *   7. Perfect Traction anchors (best real traction, fromforty-perfect2-VERIFY.md):
+ *        at or a little quicker than the best built car: Chevelle A/B
+ *          (1/8 trap 109.6) 1.30-1.3597 s
+ *        never quicker than record-class slips, and inside their class range:
+ *          NHRA Pro Mod, 1/4 trap 257.24 (Chip King 0.920): 0.920-0.980 s
+ *          Top Fuel, 1000 ft trap 343.16 (Brittany Force 0.819): 0.819-0.860 s
+ *        and still the quickest option, monotonic with power, traps 180-260
  *   6. target     - RWD unprepped R-Compound at a 130 mph trap reads 1.890 s
  *                   (owner-directed target, not a sourced fit)
  * Exit code 1 if any check fails.
@@ -111,7 +116,7 @@ TRAPS.forEach(function (q) { DRIVES.forEach(function (d) {
   check('perfect', pu === pp, q + ' mph ' + d + ' Perfect Traction prepped ' + pp + ' != unprepped ' + pu);
   var bestReal = Math.min.apply(null, REAL.map(function (t) { return Math.min(g(q, d, t, 'unprepped'), g(q, d, t, 'prepped')); }));
   check('perfect', pp <= bestReal - MIN_GAP && pp.toFixed(3) !== bestReal.toFixed(3), q + ' mph ' + d + ' Perfect Traction ' + pp.toFixed(3) + ' not quicker than best real tire ' + bestReal.toFixed(3));
-  check('ranges', pp >= 0.95 && pp <= 2.4, q + ' mph ' + d + ' Perfect Traction ' + pp.toFixed(3) + ' outside 0.95-2.40');
+  check('ranges', pp >= 1.0 && pp <= 2.4, q + ' mph ' + d + ' Perfect Traction ' + pp.toFixed(3) + ' outside 1.00-2.40');
   PREPS.forEach(function (p) { REAL.forEach(function (t) {
     var v = g(q, d, t, p);
     check('ranges', v >= 1.1 && v <= 3.2, q + ' mph ' + d + ' ' + LAB[t] + '/' + p + ' ' + v.toFixed(3) + ' outside 1.10-3.20');
@@ -141,6 +146,25 @@ DRIVES.forEach(function (d) { TIRES.forEach(function (t) { PREPS.forEach(functio
     prev = v; prevQ = q;
   }
 }); }); });
+
+function perf(inp) { return Aero.slipEt(Aero.runCar(Object.assign({ drive: 'rwd', tire: PERFECT }, inp)), 60); }
+[[{ trapEighth: '109.6' }, 1.30, 1.3597, 'Chevelle A/B (1/8 109.6)'],
+ [{ trapQuarter: '257.24' }, 0.92, 0.98, 'Pro Mod (1/4 257.24)'],
+ [{ trapQuarter: '251.53' }, 0.92, 0.98, 'Pro Mod (1/4 251.53)'],
+ [{ trap1000: '343.16' }, 0.819, 0.86, 'Top Fuel (1000 ft 343.16)']].forEach(function (a) {
+  var v = perf(a[0]);
+  check('perfect', v >= a[1] && v <= a[2], 'Perfect Traction ' + a[3] + ' ' + v.toFixed(3) + ' outside ' + a[1] + '-' + a[2]);
+});
+DRIVES.forEach(function (d) {
+  var prev = null;
+  for (var q = 180; q <= 260.01; q += 5) {
+    var v = s60(q, d, PERFECT, 'prepped');
+    var others = REAL.map(function (o) { return Math.min(s60(q, d, o, 'unprepped'), s60(q, d, o, 'prepped')); });
+    check('perfect', v > 0 && v < Math.min.apply(null, others), d + ' ' + q + ' mph Perfect Traction ' + v.toFixed(4) + ' not quickest (' + Math.min.apply(null, others).toFixed(4) + ')');
+    if (prev != null) check('perfect', v <= prev + 1e-4, d + ' Perfect Traction slower at ' + q + ' mph');
+    prev = v;
+  }
+});
 
 console.log('\nchecks: ' + Object.keys(checks).map(function (k) { return k + ' ' + checks[k]; }).join(', ') +
   ' | smallest tire-to-tire / prep-to-prep gap: ' + minGap.toFixed(3) + ' s | largest 60 ft rise with power: ' + worstRise.toFixed(4) + ' s');

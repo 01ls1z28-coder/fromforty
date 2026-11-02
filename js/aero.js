@@ -58,9 +58,10 @@
  *   the cited no-prep sources are mixed, see VERIFY).
  *   R-Compound x0.9486: OWNER-DIRECTED TARGET, not a sourced fit (Jorge: RWD
  *   at a 130 mph trap should read a 1.890 s 60 ft unprepped; was 1.936 at x0.902).
- * Perfect Traction (option 6): no grip cap, no wheelspin, same on any track;
- *   launch limited only by delivering full power (perfectCapG). An idealised
- *   bound, not a tire: quicker than every real tire at every power.
+ * Perfect Traction (option 6): best real-world traction, same on any track;
+ *   a launch-g ceiling that rises with power (perfectCapG), anchored to the
+ *   best built-car and NHRA Pro Mod / nitro 60 ft. Quicker than every real
+ *   tire at every power.
  * Launch acceleration cap (launchCapG): drive force p / 25 mph scaled by
  *   grip^0.15 (launch rpm: a stickier tire holds more launch rpm / slip), soft
  *   minimum with the grip (n = 2.92), Street-tire wheelspin above the grip
@@ -164,22 +165,32 @@
     if (normalizeDrive(drive) !== 'fwd' || !isDrag(tireClass(tire))) return g;
     return g * (normalizePrep(prep) === 'prepped' ? FWD_DRAG_TIRE : FWD_DRAG_TIRE_UNPREP);
   }
-  /* Perfect Traction: no grip cap and no wheelspin, same on any track. The
-   * launch is limited only by the drivetrain delivering full power: the same
-   * drive-force term every tire uses, p / 25 mph (full power by 25 mph in first
-   * gear; finite at v = 0, no p / v singularity), at the launch rpm of the
-   * stickiest real tire on that drivetrain (grip^0.15 term), with no grip in
-   * the soft minimum. Above the speed where p / v (with the rotating-mass
-   * factor) drops below that force, the car is purely power limited; the
-   * 40 mph handoff is the same as every tire. Strictly quicker than every
-   * real tire, because each real tire's cap is a soft minimum below this term. */
+  /* Perfect Traction: the best traction real cars achieve, same on any track
+   * (no prep effect, no wheelspin). Launch cap = min(drive force, ceiling):
+   *   drive force  p / 25 mph x gRef^0.15  (the term every tire uses; finite at
+   *                v = 0), gRef = stickiest real tire on that drivetrain
+   *   ceiling      max(gRef, PERFECT_G_INF - (PERFECT_G_INF - PERFECT_G0) e^(-p / PERFECT_P0))
+   * The ceiling is the launch g the best-hooking cars reach at a given
+   * power-to-mass p (W/kg of the trap-solved base run): it rises with power
+   * because cars built for more power are built for traction (bigger, softer
+   * tires, rear weight/wheelie bars, clutch management, then downforce), and
+   * saturates where tire friction x load runs out (nitro cars, ~4 g average to
+   * 60 ft). Fitted (3 parameters) so it is a little quicker than the best
+   * built-car slips (Chevelle A/B 1.36, R32 GT-R 1.16) and never quicker than
+   * the record-class slips: NHRA Pro Mod (Chip King 0.920 @ 257.24) and nitro
+   * (Brittany Force 0.819, Austin Prock 0.858); see fromforty-perfect2-VERIFY.md.
+   * Still strictly quicker than every real tire: each real cap is a soft
+   * minimum below min(gRef, drive force). Same 40 mph handoff as every tire. */
+  var PERFECT_G0 = 1.44, PERFECT_G_INF = 4.04, PERFECT_P0 = 1355;
+  function perfectCeilingG(p) { return PERFECT_G_INF - (PERFECT_G_INF - PERFECT_G0) * Math.exp(-p / PERFECT_P0); }
   function perfectCapG(p, drive) {
     var gRef = 0, id, c;
     for (id in TIRE_CLASS) {
       c = TIRE_CLASS[id];
       if (!isPerfect(c)) gRef = Math.max(gRef, driveTireGripG(TIRE_GRIP_G[c], drive, id, 'prepped'));
     }
-    return p / (LAUNCH_VT_MPH * MPS) / G * Math.pow(gRef, LAUNCH_RPM_BETA);
+    var drive_ = p / (LAUNCH_VT_MPH * MPS) / G * Math.pow(gRef, LAUNCH_RPM_BETA);
+    return Math.min(drive_, Math.max(gRef, perfectCeilingG(p)));
   }
 
   function interp(A, B, a) {
@@ -415,7 +426,7 @@
   }
   var api = {
     DEFAULTS: DEFAULTS, RHO: RHO, CRR: CRR, MF_WR: MF_WR, MF_NMAX: MF_NMAX, BASE_GRIP_G: BASE_GRIP_G,
-    TIRE_CLASS: TIRE_CLASS, TIRE_GRIP_G: TIRE_GRIP_G, TIRE_RATIO: TIRE_RATIO, UNPREP: UNPREP, SPIN: SPIN, SOFT_N: SOFT_N, launchCapG: launchCapG, perfectCapG: perfectCapG, TIRE_LABELS: TIRE_LABELS, TIRE_ORDER: TIRE_ORDER,
+    TIRE_CLASS: TIRE_CLASS, TIRE_GRIP_G: TIRE_GRIP_G, TIRE_RATIO: TIRE_RATIO, UNPREP: UNPREP, SPIN: SPIN, SOFT_N: SOFT_N, launchCapG: launchCapG, perfectCapG: perfectCapG, perfectCeilingG: perfectCeilingG, PERFECT: { g0: PERFECT_G0, gInf: PERFECT_G_INF, p0: PERFECT_P0 }, TIRE_LABELS: TIRE_LABELS, TIRE_ORDER: TIRE_ORDER,
     launchGripG: launchGripG, driveGripG: driveGripG, DRIVETRAINS: DRIVETRAINS,
     AWD_FACTOR: AWD_FACTOR, H_OVER_L: H_OVER_L, RWD_REAR: RWD_REAR, FWD_FRONT: FWD_FRONT, FWD_DRAG_TIRE: FWD_DRAG_TIRE, FWD_DRAG_TIRE_UNPREP: FWD_DRAG_TIRE_UNPREP, simulate: simulate, etAt: etAt, trapAt: trapAt, rollSec: rollSec,
     tAtMph: tAtMph, runCar: runCar, slipEt: slipEt, slipTimeAtMph: slipTimeAtMph,
