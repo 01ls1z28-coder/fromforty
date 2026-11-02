@@ -306,7 +306,8 @@
     var trace = {
       maxMph: top,
       seconds: function (mph) { if (mph <= HANDOFF_MPH) return 0; return interp(vv, tt, mph * MPS); },
-      secondsAtFeet: function (ft) { return ft <= 0 ? 0 : interp(xx, tt, ft * FT); }
+      secondsAtFeet: function (ft) { return ft <= 0 ? 0 : interp(xx, tt, ft * FT); },
+      feetAtSeconds: function (s) { if (s <= 0) return 0; var x = interp(tt, xx, s); return x == null ? null : x / FT; }
     };
 
     // Launch with the chosen tire/prep (re-times 0-40 only).
@@ -332,7 +333,8 @@
     return {
       run: L, seconds: L.t40 - L.t0, feet: (L.x40 - L.rollM) / FT, gripG: gEff, peakGripG: veh.gripG,
       handoffMph: vh / MPS, hSeconds: tH - L.t0, hFeet: (xH - L.rollM) / FT,
-      tOff: interp(vv, tt, vh) || 0, xOff: (interp(vv, xx, vh) || 0) / FT
+      tOff: interp(vv, tt, vh) || 0, xOff: (interp(vv, xx, vh) || 0) / FT,
+      rolloutMph: interp(L.T, L.V, L.t0) / MPS
     };
   }
   /* Slip ET at X ft = launch to the handoff speed + the 40+ trace beyond it. */
@@ -349,12 +351,27 @@
     var s = A.trace.seconds(mph);
     return s == null ? null : L.hSeconds + s - L.tOff;
   }
+  /* Chart helpers on the slip clock (t = 0 at the 1-ft rollout, like the slip).
+   * Speed reached at rollout is plotted at t = 0; nothing here changes a slip number. */
+  function slipChartSeconds(row, mph) {
+    var L = row.aero.launch;
+    if (mph <= L.rolloutMph) return 0;
+    return slipTimeAtMph(row, mph);
+  }
+  function slipFeetAtTime(row, t) {
+    var A = row.aero, L = A.launch;
+    if (!(t > 0)) return 0;
+    if (t <= L.hSeconds) { var x = interp(L.run.T, L.run.X, t + L.run.t0); return x == null ? null : (x - L.run.rollM) / FT; }
+    var f = A.trace.feetAtSeconds(t - L.hSeconds + L.tOff);
+    return f == null ? null : L.hFeet + f - L.xOff;
+  }
   var api = {
     DEFAULTS: DEFAULTS, RHO: RHO, CRR: CRR, MF_WR: MF_WR, MF_NMAX: MF_NMAX, BASE_GRIP_G: BASE_GRIP_G,
     TIRE_CLASS: TIRE_CLASS, TIRE_GRIP_G: TIRE_GRIP_G, TIRE_RATIO: TIRE_RATIO, UNPREP: UNPREP, SPIN: SPIN, SOFT_N: SOFT_N, launchCapG: launchCapG, TIRE_LABELS: TIRE_LABELS, TIRE_ORDER: TIRE_ORDER,
     launchGripG: launchGripG, driveGripG: driveGripG, DRIVETRAINS: DRIVETRAINS,
     AWD_FACTOR: AWD_FACTOR, H_OVER_L: H_OVER_L, RWD_REAR: RWD_REAR, FWD_FRONT: FWD_FRONT, FWD_DRAG_TIRE: FWD_DRAG_TIRE, simulate: simulate, etAt: etAt, trapAt: trapAt, rollSec: rollSec,
-    tAtMph: tAtMph, runCar: runCar, slipEt: slipEt, slipTimeAtMph: slipTimeAtMph
+    tAtMph: tAtMph, runCar: runCar, slipEt: slipEt, slipTimeAtMph: slipTimeAtMph,
+    slipChartSeconds: slipChartSeconds, slipFeetAtTime: slipFeetAtTime
   };
   global.FromFortyAero = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

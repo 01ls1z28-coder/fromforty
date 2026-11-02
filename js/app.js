@@ -100,6 +100,30 @@
     return 200;
   }
 
+  // Chart clock. Aero rows: standing start on the slip clock (t = 0 at the
+  // 1-ft rollout, same tire/prep/drivetrain launch as the slip), continuous
+  // into the 40+ trace. Other rows keep the original 40 mph start.
+  function chartFromLaunch(row) {
+    var Aero = global.FromFortyAero;
+    return !!(row && row.aero && Aero && Aero.slipChartSeconds);
+  }
+  function chartSeconds(row, profile, mph) {
+    return chartFromLaunch(row) ? global.FromFortyAero.slipChartSeconds(row, mph) : traceSeconds(profile, mph);
+  }
+  function chartSpeeds(row, endSpeed) {
+    var out = [], i;
+    if (chartFromLaunch(row)) {
+      var r = row.aero.launch.rolloutMph;
+      out.push(0, r);
+      for (i = Math.floor(r * 2) + 1; i < 80; i++) out.push(i / 2);
+    }
+    for (i = 0; i <= 160; i++) out.push(40 + (endSpeed - 40) * i / 160);
+    return out;
+  }
+  function chartMarks(row) {
+    return chartFromLaunch(row) ? [40, 60, 80, 100, 130, 150, 200] : [40, 80, 100, 130, 150, 200];
+  }
+
   function modelElapsedAt(profile, mph) {
     return traceSeconds(profile, mph);
   }
@@ -244,7 +268,7 @@
       var graph = el('div', 'speed-graph');
       var graphHead = el('div', 'speed-graph-head');
       graphHead.appendChild(el('span', 'speed-graph-title', 'SPEED / TIME TRACE'));
-      graphHead.appendChild(el('span', 'speed-graph-legend', 'X TIME (S)  •  Y SPEED (MPH)  •  HOVER FOR VALUES'));
+      graphHead.appendChild(el('span', 'speed-graph-legend', chartFromLaunch(row) ? 'X TIME FROM LAUNCH (S)  •  Y SPEED (MPH)  •  HOVER FOR VALUES' : 'X TIME (S)  •  Y SPEED (MPH)  •  HOVER FOR VALUES'));
       graph.appendChild(graphHead);
 
       var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -259,9 +283,9 @@
       }
       var left = 58, right = 735, top = 22, bottom = 228;
       var endSpeed = traceEndSpeed(profile);
-      var endTime = traceSeconds(profile, endSpeed);
+      var endTime = chartSeconds(row, profile, endSpeed);
       if (!(endTime > 0)) return;
-      var speedMarks = [40, 80, 100, 130, 150, 200].filter(function (m) { return m <= endSpeed; });
+      var speedMarks = chartMarks(row).filter(function (m) { return m <= endSpeed; });
       [0, 50, 100, 150, 200, 250].forEach(function (speedMark) {
         var y = bottom - (speedMark / 250) * (bottom - top);
         svg.appendChild(svgEl('line', { x1: left, y1: y, x2: right, y2: y, class: 'graph-grid' }));
@@ -275,14 +299,13 @@
       svg.appendChild(yAxisLabel);
       var samples = [];
       var points = [];
-      for (var sample = 0; sample <= 160; sample++) {
-        var mph = 40 + ((endSpeed - 40) * sample / 160);
-        var elapsed = traceSeconds(profile, mph);
+      chartSpeeds(row, endSpeed).forEach(function (mph) {
+        var elapsed = chartSeconds(row, profile, mph);
         var x = left + (elapsed / endTime) * (right - left);
         var y = bottom - (mph / 250) * (bottom - top);
         samples.push({ mph: mph, elapsed: elapsed, x: x, y: y });
         points.push(x.toFixed(2) + ',' + y.toFixed(2));
-      }
+      });
       svg.appendChild(svgEl('polyline', { points: points.join(' '), class: 'graph-line' }));
       [0, 0.25, 0.5, 0.75, 1].forEach(function (fraction) {
         var x = left + fraction * (right - left);
@@ -292,10 +315,10 @@
         svg.appendChild(label);
       });
       speedMarks.forEach(function (speedMark) {
-        var elapsed = traceSeconds(profile, speedMark);
+        var elapsed = chartSeconds(row, profile, speedMark);
         var x = left + (elapsed / endTime) * (right - left);
         var y = bottom - (speedMark / 250) * (bottom - top);
-        svg.appendChild(svgEl('circle', { cx: x, cy: y, r: 3, class: 'graph-dot' }));
+        svg.appendChild(svgEl('circle', { cx: x, cy: y, r: 3, class: 'graph-dot', 'data-mph': speedMark, 'data-seconds': elapsed.toFixed(4) }));
       });
       var timeLabel = svgEl('text', { x: right, y: bottom + 48, class: 'graph-axis-label', 'text-anchor': 'end' });
       timeLabel.textContent = 'TIME (SECONDS)';
@@ -784,7 +807,7 @@
       graphHead.appendChild(el('span', 'speed-graph-title', 'SPEED / TIME TRACE'));
       var gapLabel = el('span', 'speed-graph-gap-label', 'GAP — HOVER GRAPH');
       graphHead.appendChild(gapLabel);
-      graphHead.appendChild(el('span', 'speed-graph-legend', 'X TIME (S)  •  Y SPEED (MPH)  •  HOVER FOR BOTH CARS'));
+      graphHead.appendChild(el('span', 'speed-graph-legend', chartFromLaunch(rows[0]) ? 'X TIME FROM LAUNCH (S)  •  Y SPEED (MPH)  •  HOVER FOR BOTH CARS' : 'X TIME (S)  •  Y SPEED (MPH)  •  HOVER FOR BOTH CARS'));
       graph.appendChild(graphHead);
       var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('viewBox', '0 0 760 300');
@@ -798,9 +821,8 @@
       }
       var left = 58, right = 735, top = 22, bottom = 228;
       var endSpeeds = profiles.map(traceEndSpeed);
-      var endTimes = profiles.map(function (profile, i) { return traceSeconds(profile, endSpeeds[i]); });
+      var endTimes = profiles.map(function (profile, i) { return chartSeconds(rows[i], profile, endSpeeds[i]); });
       var endTime = Math.max.apply(Math, endTimes);
-      var speedMarks = [40, 80, 100, 130, 150, 200];
       [0, 50, 100, 150, 200, 250].forEach(function (speedMark) {
         var y = bottom - (speedMark / 250) * (bottom - top);
         svg.appendChild(svgEl('line', { x1: left, y1: y, x2: right, y2: y, class: 'graph-grid' }));
@@ -815,24 +837,22 @@
       var colors = ['car-one', 'car-two'];
       var allSamples = [];
       profiles.forEach(function (profile, carIndex) {
-        var samples = [], points = [];
-        for (var sample = 0; sample <= 160; sample++) {
-          var mph = 40 + sample;
-          if (mph > endSpeeds[carIndex]) break;
-          var elapsed = traceSeconds(profile, mph);
+        var samples = [], points = [], carRow = rows[carIndex];
+        chartSpeeds(carRow, endSpeeds[carIndex]).forEach(function (mph) {
+          var elapsed = chartSeconds(carRow, profile, mph);
           var x = left + (elapsed / endTime) * (right - left);
           var y = bottom - (mph / 250) * (bottom - top);
           samples.push({ mph: mph, elapsed: elapsed, x: x, y: y });
           points.push(x.toFixed(2) + ',' + y.toFixed(2));
-        }
+        });
         allSamples.push(samples);
         svg.appendChild(svgEl('polyline', { points: points.join(' '), class: 'graph-line ' + colors[carIndex] }));
-        speedMarks.forEach(function (speedMark) {
+        chartMarks(carRow).forEach(function (speedMark) {
           if (speedMark > endSpeeds[carIndex]) return;
-          var elapsed = traceSeconds(profile, speedMark);
+          var elapsed = chartSeconds(carRow, profile, speedMark);
           var x = left + (elapsed / endTime) * (right - left);
           var y = bottom - (speedMark / 250) * (bottom - top);
-          svg.appendChild(svgEl('circle', { cx: x, cy: y, r: 3, class: 'graph-dot ' + colors[carIndex] }));
+          svg.appendChild(svgEl('circle', { cx: x, cy: y, r: 3, class: 'graph-dot ' + colors[carIndex], 'data-mph': speedMark, 'data-seconds': elapsed.toFixed(4) }));
         });
       });
       [0, 0.25, 0.5, 0.75, 1].forEach(function (fraction) {
@@ -891,8 +911,12 @@
           viewX = (event.clientX - bounds.left) / bounds.width * 760;
         }
         var pointsAtX = allSamples.map(function (samples) { return pointAtViewX(viewX, samples); });
+        var fromLaunch = chartFromLaunch(rows[0]) && chartFromLaunch(rows[1]);
+        var hoverTime = (Math.max(left, Math.min(right, viewX)) - left) / (right - left) * endTime;
         var distancesAtX = pointsAtX.map(function (item, index) {
-          return modelDistanceAt(rows[index], item.mph);
+          // Same moment on the shared clock: feet covered since the launch
+          // (both from the 1-ft rollout); otherwise the original 40 mph basis.
+          return fromLaunch ? global.FromFortyAero.slipFeetAtTime(rows[index], hoverTime) : modelDistanceAt(rows[index], item.mph);
         });
         var distanceGap = distancesAtX[1] == null || distancesAtX[0] == null
           ? null : distancesAtX[1] - distancesAtX[0];
