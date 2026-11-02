@@ -9,16 +9,21 @@
  *                   slip's 3 decimals. Gaps under 0.005 s are listed as WARN
  *                   (expected only where the sourced step is small: Drag
  *                   Radial vs Slick x1.02, and torque-limited low-power cars)
- *   2. tire order - Street > Summer > UHP > R-Compound > Drag Radial > Slick
- *                   (slowest to quickest), on each prep
+ *   2. tire order - slowest to quickest:
+ *                   prepped   Street > Summer > UHP > R-Compound > Drag Radial > Slick
+ *                   unprepped Street > Summer > UHP > R-Compound > Slick > Drag Radial
+ *                   (a bias slick needs prep/heat to bite; on untreated asphalt the
+ *                   drag radial is the quicker of the two - owner direction, sources
+ *                   mixed: fromforty-noprep-VERIFY.md)
  *   3. prep       - prepped is quicker than unprepped on every tire
  *   4. power      - 60 ft never gets slower as the trap rises (80-180 mph, 2.5 mph steps)
  *   5. ranges     - every 60 ft in 1.10-3.20 s; RWD reference bands:
  *        unprepped Street, trap >= 130 mph: 1.95-2.60 s (street/no-prep launches
  *          of 450-800 hp RWD cars, Hot Rod "mild street car on radials often
  *          well above 2.2"; mustang6g "anything under 2.0 is good on stock tires")
- *        prepped Slick, trap 130-150 mph: 1.25-1.60 s (Hot Rod: mid-10s car
- *          on slicks ~1.45)
+ *        prepped Slick, trap 130-150 mph: 1.40-1.80 s (street cars on slicks:
+ *          C/D Hellcat Hoosier 1.685 @ 119, SN95 Vortech 1.65 @ 121, GT500
+ *          1.80 @ 114; purpose-built drag cars run quicker, ~1.36-1.50)
  *        prepped Street, trap 100 mph: 1.90-2.50 s (Civic Si / Mustang EcoBoost
  *          stock street-tire strip slips 1.93-2.27)
  * Exit code 1 if any check fails.
@@ -31,6 +36,8 @@ var Aero = require(path.join(__dirname, '..', 'js', 'aero.js'));
 var TRAPS = [90, 100, 115, 130, 150, 170];
 var DRIVES = ['rwd', 'fwd', 'awd'];
 var TIRES = Aero.TIRE_ORDER;          // [Street, Summer, UHP, R-Compound, Drag Radial, Slick]
+// slowest -> quickest on each prep (see header, item 2)
+var ORDER = { prepped: [0, 3, 4, 5, 1, 2], unprepped: [0, 3, 4, 5, 2, 1] };
 var PREPS = ['unprepped', 'prepped'];
 var LAB = Aero.TIRE_LABELS;
 var MIN_GAP = 0.001, WARN_GAP = 0.005, warns = [];
@@ -62,10 +69,11 @@ var minGap = Infinity;
 TRAPS.forEach(function (q) { DRIVES.forEach(function (d) {
   // distinct: neighbouring tires on the same prep, and the two preps on the same tire
   PREPS.forEach(function (p) {
-    for (var i = 1; i < TIRES.length; i++) {
-      var a = g(q, d, TIRES[i - 1], p), b = g(q, d, TIRES[i], p), gap = Math.abs(a - b);
+    var O = ORDER[p];
+    for (var i = 1; i < O.length; i++) {
+      var a = g(q, d, O[i - 1], p), b = g(q, d, O[i], p), gap = Math.abs(a - b);
       minGap = Math.min(minGap, gap);
-      var m1 = q + ' mph ' + d + ' ' + p + ': ' + LAB[TIRES[i - 1]] + ' ' + a.toFixed(3) + ' vs ' + LAB[TIRES[i]] + ' ' + b.toFixed(3);
+      var m1 = q + ' mph ' + d + ' ' + p + ': ' + LAB[O[i - 1]] + ' ' + a.toFixed(3) + ' vs ' + LAB[O[i]] + ' ' + b.toFixed(3);
       check('distinct', gap >= MIN_GAP && a.toFixed(3) !== b.toFixed(3), m1);
       if (gap < WARN_GAP) warns.push(m1);
     }
@@ -78,9 +86,10 @@ TRAPS.forEach(function (q) { DRIVES.forEach(function (d) {
     if (gap < WARN_GAP) warns.push(m2);
   });
   PREPS.forEach(function (p) {
-    for (var j = 1; j < TIRES.length; j++) {
-      var a = g(q, d, TIRES[j - 1], p), b = g(q, d, TIRES[j], p);
-      check('order', b < a, q + ' mph ' + d + ' ' + p + ': ' + LAB[TIRES[j]] + ' ' + b.toFixed(3) + ' not quicker than ' + LAB[TIRES[j - 1]] + ' ' + a.toFixed(3));
+    var O = ORDER[p];
+    for (var j = 1; j < O.length; j++) {
+      var a = g(q, d, O[j - 1], p), b = g(q, d, O[j], p);
+      check('order', b < a, q + ' mph ' + d + ' ' + p + ': ' + LAB[O[j]] + ' ' + b.toFixed(3) + ' not quicker than ' + LAB[O[j - 1]] + ' ' + a.toFixed(3));
     }
   });
   TIRES.forEach(function (t) {
@@ -97,7 +106,7 @@ TRAPS.forEach(function (q) {
   var su = g(q, 'rwd', 0, 'unprepped'), sl = g(q, 'rwd', 2, 'prepped'), sp = g(q, 'rwd', 0, 'prepped');
   if (q >= 130) {
     check('ranges', su >= 1.95 && su <= 2.6, q + ' mph RWD Street/unprepped ' + su.toFixed(3) + ' outside 1.95-2.60');
-    if (q <= 150) check('ranges', sl >= 1.25 && sl <= 1.6, q + ' mph RWD Slick/prepped ' + sl.toFixed(3) + ' outside 1.25-1.60');
+    if (q <= 150) check('ranges', sl >= 1.4 && sl <= 1.8, q + ' mph RWD Slick/prepped ' + sl.toFixed(3) + ' outside 1.40-1.80');
   }
   if (q === 100) check('ranges', sp >= 1.9 && sp <= 2.5, '100 mph RWD Street/prepped ' + sp.toFixed(3) + ' outside 1.90-2.50');
 });

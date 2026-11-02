@@ -23,9 +23,9 @@
  *   MotorTrend Civic Type R / GTI 62/38). It now sits slightly above the static
  *   share because the soft torque/grip blend below always keeps the launch a
  *   little under the grip; flagged in VERIFY. AWD_FACTOR 0.947 (fitted; same reason).
- *   FWD on drag rubber keeps x0.753 of the drag-tire grip (2 cited FWD slips;
- *   held at the floor that keeps FWD Drag Radial >= 1.03 x R-Compound grip on
- *   both preps, so the tire order holds).
+ *   FWD on drag rubber keeps x0.92 of the drag-tire grip (2 cited FWD slips
+ *   prefer less; held at the floor that keeps FWD Slick/Drag Radial quicker
+ *   than R-Compound on both preps, so the tire order holds).
  *   FWD drag uses a 3,375 lb default mass instead of 4,050 lb (C/D curb weights
  *   of the FWD set average 3,233 lb; + driver/gear).
  *
@@ -39,14 +39,22 @@
  *                                         Prelude 0.97/0.90 g, Fusion 0.89/0.84 g + braking
  *   R-Compound            x1.142  0.890  UHP x1.038, C/D Focus RS Cup 2 vs
  *                                         Pilot Super Sport: 1.04/0.99 g, 70-0 158/154 ft
- *   Drag Radial                   1.985  fitted
- *   Slick                  x1.02   2.025  Hot Rod same-car ET Drag vs Pro Drag
+ *   Drag Radial                   1.200  fitted (LOO) on the cited street-car
+ *                                         drag-tire slips (C/D Hellcat NT555R/Hoosier,
+ *                                         GT500, SN95, Fox turbo, Super Chevy): C/D's
+ *                                         same-car P Zero -> NT555R step is 0.20 s.
+ *                                         Purpose-built drag chassis (Chevelle 1.36,
+ *                                         Hot Rod test car 1.50) launch quicker than
+ *                                         this; see fromforty-noprep-VERIFY.md
+ *   Slick                  x1.02   1.224  Hot Rod same-car ET Drag vs Pro Drag
  *                                         Radial 60 ft 1.51 vs 1.525 avg (thin: other RWD
  *                                         A/B pairs show no gap)
- * Unprepped surface: street-type rubber x0.902 (fitted); drag rubber x0.75,
- *   set so a RWD drag-radial car that cuts 1.27 prepped (157 mph trap) runs
- *   x1.115 unprepped: mean of the cited no-prep pairs (ls1tech 1.27 vs high
- *   1.3s, yellowbullet low 1.2s vs 1.3-1.5).
+ * Unprepped surface: street-type rubber x0.902 (fitted); Drag Radial x0.81,
+ *   fitted (LOO) on 3 cited no-prep slips with trap (mustang6g Whipple GT,
+ *   ls1tech MT radial TnT, ssforums SS); Slick x0.81/1.0404, i.e. 1/1.02 of the
+ *   unprepped Drag Radial: the prepped Slick step reversed, because a stiff
+ *   bias slick does not get heat into an untreated surface (owner direction;
+ *   the cited no-prep sources are mixed, see VERIFY).
  * Launch acceleration cap (launchCapG): drive force p / 25 mph scaled by
  *   grip^0.15 (launch rpm: a stickier tire holds more launch rpm / slip), soft
  *   minimum with the grip (n = 2.92), Street-tire wheelspin above the grip
@@ -72,7 +80,7 @@
   var RHO = 1.225, CRR = 0.012;
   var DEFAULTS = { cd: 0.33, areaSqft: 24.2, weightLb: 4050, weightLbFwd: 3375 };
   var MF_WR = 222.5, MF_NMAX = 14;
-  var H_OVER_L = 0.553 / 2.753, RWD_REAR = 0.45, FWD_FRONT = 0.655, FWD_DRAG_TIRE = 0.753;
+  var H_OVER_L = 0.553 / 2.753, RWD_REAR = 0.45, FWD_FRONT = 0.655, FWD_DRAG_TIRE = 0.92;
   var DRIVETRAINS = { rwd: 'RWD', fwd: 'FWD', awd: 'AWD' };
   var AWD_FACTOR = 0.947;
   var BASE_GRIP_G = 1.0, HANDOFF_MPH = 40, ROLLOUT_FT = 1, TRAP_SPAN_FT = 66;
@@ -85,12 +93,12 @@
   // Grip ratios between neighbouring classes (sourced, see header); the two
   // anchors (Street, Drag Radial) and the launch terms are fitted (LOO).
   var TIRE_RATIO = { summer: 1.075, uhp: 1.10, rcomp: 1.142, slick: 1.02 };
-  var STREET_G = 0.779, DRAG_RADIAL_G = 1.985;
+  var STREET_G = 0.779, DRAG_RADIAL_G = 1.2;
   var TIRE_GRIP_G = {
     street: STREET_G, summer: STREET_G * TIRE_RATIO.summer, uhp: STREET_G * TIRE_RATIO.uhp,
     rcomp: STREET_G * TIRE_RATIO.rcomp, dragradial: DRAG_RADIAL_G, slick: DRAG_RADIAL_G * TIRE_RATIO.slick
   };
-  var UNPREP = { street: 0.902, drag: 0.75 };       // street-type rubber / drag rubber
+  var UNPREP = { street: 0.902, dragradial: 0.81, slick: 0.81 / 1.0404 }; // street-type rubber / drag radial / slick
   var SPIN = 0.148, SOFT_N = 2.923, LAUNCH_VT_MPH = 25, LAUNCH_RPM_BETA = 0.15;
   function normalizePrep(p) {
     p = String(p == null ? 'unprepped' : p).toLowerCase();
@@ -100,7 +108,7 @@
   function isDrag(c) { return c === 'dragradial' || c === 'slick'; }
   function launchGripG(tire, prep) {
     var c = tireClass(tire), g = TIRE_GRIP_G[c];
-    if (normalizePrep(prep) !== 'prepped') g *= isDrag(c) ? UNPREP.drag : UNPREP.street;
+    if (normalizePrep(prep) !== 'prepped') g *= isDrag(c) ? UNPREP[c] : UNPREP.street;
     return g;
   }
   /* Launch acceleration cap (g) for drive-adjusted tire grip gp and power/mass p.
