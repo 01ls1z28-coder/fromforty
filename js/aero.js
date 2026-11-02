@@ -22,9 +22,9 @@
  *   value fitted on published gas and EV AWD tests (see VERIFY).
  *   The RWD launch grip (tire/prep table below) fixes the effective mu with a 45%
  *   rear static share (MotorTrend 2024 Mustang GT 55/45).
- *   FWD uses an EFFECTIVE front share of 0.591 (static share is ~0.62, MotorTrend
+ *   FWD uses an EFFECTIVE front share of 0.590 (static share is ~0.62, MotorTrend
  *   Civic Type R / GTI 62/38): wheelspin, traction control and torque steer keep
- *   a street FWD launch short of the static-share limit. AWD_FACTOR 0.842.
+ *   a street FWD launch short of the static-share limit. AWD_FACTOR 0.796.
  *   Both were refitted (leave-one-out) together with the tire table on real
  *   60 ft slips and C/D 0-60 tests (see fromforty-60ft-VERIFY.md).
  *   FWD drag uses a 3,375 lb default mass instead of 4,050 lb: this is a weight
@@ -39,15 +39,16 @@
  * Launch grip (RWD-equivalent g), fitted with leave-one-out on 35 cited 60 ft
  * slips with known tire and prep plus 30 C/D 0-60 tests (unprepped surface,
  * tire from each C/D spec block). Tire classes for the PowerCurve options:
- *   Street (street / all-season) 0.805   Summer, UHP (summer / UHP) 0.809
- *   Drag Radial, Slick (drag rubber) 1.522 - the cited A/B slips show no
+ *   Street (street / all-season) 0.803   Summer, UHP (summer / UHP) 0.810
+ *   Drag Radial, Slick (drag rubber) 1.726 - the cited A/B slips show no
  *     repeatable radial-vs-slick difference, so they share one value
- *   R-Compound: midpoint of UHP and drag rubber (1.166); only 1-2 records
- * Unprepped surface: street-type rubber x0.964 (fitted); drag rubber x0.85
+ *   R-Compound: midpoint of UHP and drag rubber; only 1-2 records
+ * Unprepped surface: street-type rubber x0.965 (fitted); drag rubber x0.85
  *   (fixed from cited prepped/unprepped drag-radial pairs, see VERIFY).
- * Wheelspin (Street tire only): if the launch drive force p / 25 mph exceeds
- *   the grip by E times, the tire slides and keeps (1 - 0.153 (1 - 1/E)) of
- *   it, so high-power cars on street tires get slower 60 ft times.
+ * Launch drive force = p / 25 mph (full power reached early in first gear).
+ *   Below the grip the launch is torque-limited (any tire), so sticky tires
+ *   stop helping low-power cars. Above it, the Street tire spins and keeps
+ *   (1 - 0.149 (1 - 1/E)) of its grip, E = drive force / grip force.
  *
  * Power is always solved with a fixed 1.0 g reference launch, so the 40+
  * trace, every roll window and every projected trap depend only on the
@@ -64,9 +65,9 @@
   var RHO = 1.225, CRR = 0.012;
   var DEFAULTS = { cd: 0.33, areaSqft: 24.2, weightLb: 4050, weightLbFwd: 3375 };
   var MF_WR = 222.5, MF_NMAX = 14;
-  var H_OVER_L = 0.553 / 2.753, RWD_REAR = 0.45, FWD_FRONT = 0.591;
+  var H_OVER_L = 0.553 / 2.753, RWD_REAR = 0.45, FWD_FRONT = 0.590;
   var DRIVETRAINS = { rwd: 'RWD', fwd: 'FWD', awd: 'AWD' };
-  var AWD_FACTOR = 0.842;
+  var AWD_FACTOR = 0.796;
   var BASE_GRIP_G = 1.0, HANDOFF_MPH = 40, ROLLOUT_FT = 1, TRAP_SPAN_FT = 66;
   var MAX_MPH = 200.5, MAX_FT = 5300;
 
@@ -74,10 +75,10 @@
   var TIRE_ORDER = [0, 3, 4, 5, 1, 2];   // PowerCurve <select> order
   // PowerCurve tire option id -> launch class (see header).
   var TIRE_CLASS = { 0: 'street', 3: 'uhp', 4: 'uhp', 5: 'rcomp', 1: 'drag', 2: 'drag' };
-  var TIRE_GRIP_G = { street: 0.805, uhp: 0.809, drag: 1.522 };
+  var TIRE_GRIP_G = { street: 0.803, uhp: 0.810, drag: 1.726 };
   TIRE_GRIP_G.rcomp = 0.5 * (TIRE_GRIP_G.uhp + TIRE_GRIP_G.drag);
-  var UNPREP = { street: 0.964, drag: 0.85 };
-  var SPIN = 0.153, SPIN_REF_MPH = 25;
+  var UNPREP = { street: 0.965, drag: 0.85 };
+  var SPIN = 0.149, SPIN_REF_MPH = 25;
 
   function normalizePrep(p) {
     p = String(p == null ? 'unprepped' : p).toLowerCase();
@@ -89,11 +90,14 @@
     if (normalizePrep(prep) !== 'prepped') g *= c === 'drag' ? UNPREP.drag : UNPREP.street;
     return g;
   }
-  /* Wheelspin on the Street tire: E = launch drive force / grip force. */
+  /* Launch force vs grip. E = launch drive force (p / 25 mph) / grip force.
+   * E < 1: torque-limited, the tire has grip to spare and the launch uses
+   * only the drive force (any tire). E > 1 on the Street tire: wheelspin. */
   function spinGripG(gripG, p, tire) {
-    if (tireClass(tire) !== 'street') return gripG;
     var E = (p / (SPIN_REF_MPH * MPS)) / (gripG * G);
-    return E <= 1 ? gripG : gripG * (1 - SPIN * (1 - 1 / E));
+    if (E <= 1) return gripG * E;
+    if (tireClass(tire) !== 'street') return gripG;
+    return gripG * (1 - SPIN * (1 - 1 / E));
   }
 
   function normalizeDrive(d) { d = String(d == null ? 'rwd' : d).toLowerCase(); return DRIVETRAINS[d] ? d : 'rwd'; }
