@@ -110,6 +110,63 @@
     return finish == null || start == null ? null : Math.max(0, finish - start);
   }
 
+  // Classic dragstrip-style timeslip. Values come from FromFortyTimeslip,
+  // which reads the existing trace and trap projections without changing
+  // them. Rows that depend on the estimated 0-40 mph launch are marked.
+  function buildTimeslip(rows, laneNames) {
+    var Slip = global.FromFortyTimeslip;
+    if (!Slip) return null;
+    var slips = rows.map(function (row) { return Slip.build(row, profileForRow(row)); });
+    if (slips.some(function (slip) { return !slip; })) return null;
+
+    var paper = el('section', 'timeslip' + (slips.length > 1 ? ' two-lane' : ''));
+    paper.setAttribute('aria-label', 'Projected dragstrip timeslip');
+    var head = el('div', 'timeslip-head');
+    head.appendChild(el('span', 'timeslip-brand', 'FROMFORTY'));
+    head.appendChild(el('span', 'timeslip-kind', 'PROJECTED TIMESLIP'));
+    paper.appendChild(head);
+
+    function line(cls, label, values) {
+      var row = el('div', 'timeslip-row ' + (cls || ''));
+      row.appendChild(el('span', 'timeslip-label', label));
+      values.forEach(function (v) { row.appendChild(el('span', 'timeslip-value', v)); });
+      return row;
+    }
+    function et(v) { return v == null ? '—' : v.toFixed(3); }
+    function mph(v) { return v == null ? '—' : v.toFixed(2); }
+
+    var table = el('div', 'timeslip-table');
+    if (slips.length > 1) table.appendChild(line('timeslip-lanes', '', laneNames));
+    var spec = [
+      ['est', '60\u2032 *', function (s) { return et(s.t60); }],
+      ['est', '330\u2032 *', function (s) { return et(s.t330); }],
+      ['est', '1/8 ET *', function (s) { return et(s.eighthEt); }],
+      ['mph', '1/8 MPH', function (s) { return mph(s.eighthMph); }],
+      ['est', '1000\u2032 *', function (s) { return et(s.thousandEt); }],
+      ['est', '1/4 ET *', function (s) { return et(s.quarterEt); }],
+      ['mph', '1/4 MPH', function (s) { return mph(s.quarterMph); }],
+      ['est', '1/2 ET *', function (s) { return et(s.halfEt); }],
+      ['mph', '1/2 MPH', function (s) { return mph(s.halfMph); }],
+      ['est', '1 MI ET *', function (s) { return et(s.mileEt); }],
+      ['mph', '1 MI MPH', function (s) { return mph(s.mileMph); }]
+    ];
+    spec.forEach(function (item, index) {
+      table.appendChild(line(item[0] + (index === 4 || index === 7 || index === 9 ? ' timeslip-gap' : ''),
+        item[1], slips.map(item[2])));
+    });
+    table.appendChild(line('est timeslip-launch timeslip-gap', '0\u201340 *', slips.map(function (s) {
+      return s.launch.seconds.toFixed(2) + ' s/' + s.launch.feet.toFixed(0) + '\u2032';
+    })));
+    paper.appendChild(table);
+
+    var note = el('p', 'timeslip-note',
+      '* ESTIMATED: includes a 0\u201340 mph launch (1.0 g grip limit, then the trace\u2019s own power at 40 mph; 1-ft rollout). ' +
+      'From 40 mph on, times are read off the speed/time trace. MPH = Drag Racing trap projections. No reaction time.');
+    paper.appendChild(note);
+    paper.appendChild(el('p', 'timeslip-credit', 'Created by Jorge Guerra'));
+    return paper;
+  }
+
   function renderResults(card, row, margins) {
     var host = card.querySelector('.results');
     host.textContent = '';
@@ -382,6 +439,8 @@
     }
     slipBody.appendChild(drag);
     host.appendChild(slipBody);
+    var timeslip = buildTimeslip([row], ['VEHICLE']);
+    if (timeslip) host.appendChild(timeslip);
     // Keep the trace beneath the complete roll and drag results.
     addSpeedGraph(host);
   }
@@ -822,6 +881,8 @@
       graph.appendChild(svg); panel.appendChild(graph);
     }
 
+    var vsTimeslip = buildTimeslip(rows, ['LEFT · VEHICLE', 'RIGHT · OPPONENT']);
+    if (vsTimeslip) panel.appendChild(vsTimeslip);
     addComparisonGraph();
     panel.appendChild(el('p', 'vs-note', 'Differences are Opponent Vehicle minus Vehicle. Positive roll time means Opponent Vehicle is slower; positive trap speed means Opponent Vehicle is faster.'));
     host.appendChild(panel);
