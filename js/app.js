@@ -566,7 +566,20 @@
       optGrid.appendChild(field('Tire', optSelect('tire', Aero.TIRE_ORDER.map(function (id) {
         return [String(id), Aero.TIRE_LABELS[id], id === 0];
       }))));
-      optGrid.appendChild(field('Track', optSelect('prep', [['unprepped', 'Unprepped', true], ['prepped', 'Prepped']])));
+      var prepField = field('Track', optSelect('prep', [['unprepped', 'Unprepped', true], ['prepped', 'Prepped']]));
+      optGrid.appendChild(prepField);
+      // Perfect Traction ignores track prep: grey the Track select out while it is chosen.
+      (function (tireSel, prepSel, prepLabel) {
+        function syncPrep() {
+          var perfect = Aero.TIRE_CLASS[tireSel.value] === 'perfect';
+          prepSel.disabled = perfect;
+          prepSel.title = perfect ? 'Perfect Traction: track prep has no effect' : '';
+          prepLabel.textContent = perfect ? 'Track (no effect)' : 'Track';
+          prepField.classList.toggle('field-na', perfect);
+        }
+        tireSel.addEventListener('change', syncPrep);
+        syncPrep();
+      })(optGrid.querySelector('[data-opt="tire"]'), prepField.querySelector('select'), prepField.querySelector('.field-label'));
       vehicle.appendChild(optGrid);
       vehicle.appendChild(el('p', 'vehicle-opts-note', 'Blank uses defaults. Cd and area set wind drag; drivetrain, tire and track change only the 0\u201340 mph launch.'));
     }

@@ -2,7 +2,8 @@
  * FromForty launch grid sanity test.  Run:  node tests/grid-sanity.js
  * (Node only; the page itself never loads this file.)
  *
- * Grid: 1/4-mile trap 90-170 mph x RWD/FWD/AWD x 6 tires x unprepped/prepped.
+ * Grid: 1/4-mile trap 90-170 mph x RWD/FWD/AWD x 7 tires (6 real + Perfect
+ * Traction) x unprepped/prepped.
  * Checks, for every trap and drivetrain:
  *   1. distinct   - neighbouring tires (same prep) and the two preps (same
  *                   tire) never tie: >= 0.001 s apart and different at the
@@ -15,7 +16,10 @@
  *                   (a bias slick needs prep/heat to bite; on untreated asphalt the
  *                   drag radial is the quicker of the two - owner direction, sources
  *                   mixed: fromforty-noprep-VERIFY.md)
- *   3. prep       - prepped is quicker than unprepped on every tire
+ *      Perfect Traction is last (quickest) on both preps, and must also beat
+ *      every other tire at every trap in the power sweep (item 4)
+ *   3. prep       - prepped is quicker than unprepped on every real tire;
+ *                   Perfect Traction is identical on both preps (exact)
  *   4. power      - 60 ft never gets slower as the trap rises (80-180 mph, 2.5 mph steps)
  *   5. ranges     - every 60 ft in 1.10-3.20 s; RWD reference bands:
  *        unprepped Street, trap >= 130 mph: 1.95-2.60 s (street/no-prep launches
@@ -26,6 +30,11 @@
  *          1.80 @ 114; purpose-built drag cars run quicker, ~1.36-1.50)
  *        prepped Street, trap 100 mph: 1.90-2.50 s (Civic Si / Mustang EcoBoost
  *          stock street-tire strip slips 1.93-2.27)
+ *        Perfect Traction, any trap: 0.95-2.40 s (idealised power-only launch;
+ *          built race cars on prepped tracks cut ~1.16-1.36: T1 GT-R 1.203,
+ *          Kravchenko R32 1.16, Chevelle A/B 1.36)
+ *   6. target     - RWD unprepped R-Compound at a 130 mph trap reads 1.890 s
+ *                   (owner-directed target, not a sourced fit)
  * Exit code 1 if any check fails.
  */
 'use strict';
@@ -37,7 +46,9 @@ var TRAPS = [90, 100, 115, 130, 150, 170];
 var DRIVES = ['rwd', 'fwd', 'awd'];
 var TIRES = Aero.TIRE_ORDER;          // [Street, Summer, UHP, R-Compound, Drag Radial, Slick]
 // slowest -> quickest on each prep (see header, item 2)
-var ORDER = { prepped: [0, 3, 4, 5, 1, 2], unprepped: [0, 3, 4, 5, 2, 1] };
+var PERFECT = 6;
+var ORDER = { prepped: [0, 3, 4, 5, 1, 2, PERFECT], unprepped: [0, 3, 4, 5, 2, 1, PERFECT] };
+var REAL = TIRES.filter(function (t) { return t !== PERFECT; });
 var PREPS = ['unprepped', 'prepped'];
 var LAB = Aero.TIRE_LABELS;
 var MIN_GAP = 0.001, WARN_GAP = 0.005, warns = [];
@@ -47,7 +58,7 @@ function s60(q, d, t, p) {
   return Aero.slipEt(row, 60);
 }
 
-var fails = [], checks = { distinct: 0, order: 0, prep: 0, power: 0, ranges: 0 };
+var fails = [], checks = { distinct: 0, order: 0, prep: 0, power: 0, ranges: 0, perfect: 0, target: 0 };
 function check(kind, ok, msg) { checks[kind]++; if (!ok) fails.push(kind + ': ' + msg); }
 
 var grid = {};
@@ -78,7 +89,7 @@ TRAPS.forEach(function (q) { DRIVES.forEach(function (d) {
       if (gap < WARN_GAP) warns.push(m1);
     }
   });
-  TIRES.forEach(function (t) {
+  REAL.forEach(function (t) {
     var gap = Math.abs(g(q, d, t, 'unprepped') - g(q, d, t, 'prepped'));
     minGap = Math.min(minGap, gap);
     var m2 = q + ' mph ' + d + ' ' + LAB[t] + ': unprepped vs prepped ' + gap.toFixed(3) + ' s apart';
@@ -92,11 +103,16 @@ TRAPS.forEach(function (q) { DRIVES.forEach(function (d) {
       check('order', b < a, q + ' mph ' + d + ' ' + p + ': ' + LAB[O[j]] + ' ' + b.toFixed(3) + ' not quicker than ' + LAB[O[j - 1]] + ' ' + a.toFixed(3));
     }
   });
-  TIRES.forEach(function (t) {
+  REAL.forEach(function (t) {
     var u = g(q, d, t, 'unprepped'), pr = g(q, d, t, 'prepped');
     check('prep', pr < u, q + ' mph ' + d + ' ' + LAB[t] + ': prepped ' + pr.toFixed(3) + ' vs unprepped ' + u.toFixed(3));
   });
-  PREPS.forEach(function (p) { TIRES.forEach(function (t) {
+  var pu = g(q, d, PERFECT, 'unprepped'), pp = g(q, d, PERFECT, 'prepped');
+  check('perfect', pu === pp, q + ' mph ' + d + ' Perfect Traction prepped ' + pp + ' != unprepped ' + pu);
+  var bestReal = Math.min.apply(null, REAL.map(function (t) { return Math.min(g(q, d, t, 'unprepped'), g(q, d, t, 'prepped')); }));
+  check('perfect', pp <= bestReal - MIN_GAP && pp.toFixed(3) !== bestReal.toFixed(3), q + ' mph ' + d + ' Perfect Traction ' + pp.toFixed(3) + ' not quicker than best real tire ' + bestReal.toFixed(3));
+  check('ranges', pp >= 0.95 && pp <= 2.4, q + ' mph ' + d + ' Perfect Traction ' + pp.toFixed(3) + ' outside 0.95-2.40');
+  PREPS.forEach(function (p) { REAL.forEach(function (t) {
     var v = g(q, d, t, p);
     check('ranges', v >= 1.1 && v <= 3.2, q + ' mph ' + d + ' ' + LAB[t] + '/' + p + ' ' + v.toFixed(3) + ' outside 1.10-3.20');
   }); });
@@ -108,6 +124,7 @@ TRAPS.forEach(function (q) {
     check('ranges', su >= 1.95 && su <= 2.6, q + ' mph RWD Street/unprepped ' + su.toFixed(3) + ' outside 1.95-2.60');
     if (q <= 150) check('ranges', sl >= 1.4 && sl <= 1.8, q + ' mph RWD Slick/prepped ' + sl.toFixed(3) + ' outside 1.40-1.80');
   }
+  if (q === 130) { var rc = g(q, 'rwd', 5, 'unprepped'); check('target', Math.abs(rc - 1.89) < 0.0005, '130 mph RWD R-Compound/unprepped ' + rc.toFixed(4) + ' != 1.890 (owner target)'); }
   if (q === 100) check('ranges', sp >= 1.9 && sp <= 2.5, '100 mph RWD Street/prepped ' + sp.toFixed(3) + ' outside 1.90-2.50');
 });
 
@@ -117,6 +134,10 @@ DRIVES.forEach(function (d) { TIRES.forEach(function (t) { PREPS.forEach(functio
   for (var q = 80; q <= 180.01; q += 2.5) {
     var v = s60(q, d, t, p);
     if (prev != null) { worstRise = Math.max(worstRise, v - prev); check('power', v <= prev + 1e-4, d + ' ' + LAB[t] + '/' + p + ': ' + prevQ + ' mph ' + prev.toFixed(4) + ' -> ' + q + ' mph ' + v.toFixed(4)); }
+    if (t === PERFECT) {
+      var others = REAL.map(function (o) { return Math.min(s60(q, d, o, 'unprepped'), s60(q, d, o, 'prepped')); });
+      check('perfect', v < Math.min.apply(null, others), d + ' ' + q + ' mph Perfect Traction/' + p + ' ' + v.toFixed(4) + ' not quickest');
+    }
     prev = v; prevQ = q;
   }
 }); }); });

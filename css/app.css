@@ -3206,6 +3206,8 @@ h1 {
 }
 .vehicle-opts select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); outline: none; }
 .vehicle-opts-note { margin: 8px 0 0; color: var(--muted); font-size: 11px; }
+.vehicle-opts select:disabled { opacity: 0.45; cursor: not-allowed; }
+.vehicle-grid .field.field-na .field-label { color: var(--muted); }
 .cars.two-up .vehicle-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 900px) {
   .car .vehicle-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

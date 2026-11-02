@@ -23,9 +23,10 @@
  *   MotorTrend Civic Type R / GTI 62/38). It now sits slightly above the static
  *   share because the soft torque/grip blend below always keeps the launch a
  *   little under the grip; flagged in VERIFY. AWD_FACTOR 0.947 (fitted; same reason).
- *   FWD on drag rubber keeps x0.92 of the drag-tire grip (2 cited FWD slips
- *   prefer less; held at the floor that keeps FWD Slick/Drag Radial quicker
- *   than R-Compound on both preps, so the tire order holds).
+ *   FWD on drag rubber keeps x0.92 of the drag-tire grip prepped and x0.95
+ *   unprepped (2 cited FWD slips prefer less; each held at the floor that keeps
+ *   FWD Slick/Drag Radial quicker than R-Compound on that prep, so the tire
+ *   order holds; the unprepped floor rose with the owner-set R-Compound below).
  *   FWD drag uses a 3,375 lb default mass instead of 4,050 lb (C/D curb weights
  *   of the FWD set average 3,233 lb; + driver/gear).
  *
@@ -55,6 +56,11 @@
  *   unprepped Drag Radial: the prepped Slick step reversed, because a stiff
  *   bias slick does not get heat into an untreated surface (owner direction;
  *   the cited no-prep sources are mixed, see VERIFY).
+ *   R-Compound x0.9486: OWNER-DIRECTED TARGET, not a sourced fit (Jorge: RWD
+ *   at a 130 mph trap should read a 1.890 s 60 ft unprepped; was 1.936 at x0.902).
+ * Perfect Traction (option 6): no grip cap, no wheelspin, same on any track;
+ *   launch limited only by delivering full power (perfectCapG). An idealised
+ *   bound, not a tire: quicker than every real tire at every power.
  * Launch acceleration cap (launchCapG): drive force p / 25 mph scaled by
  *   grip^0.15 (launch rpm: a stickier tire holds more launch rpm / slip), soft
  *   minimum with the grip (n = 2.92), Street-tire wheelspin above the grip
@@ -80,16 +86,16 @@
   var RHO = 1.225, CRR = 0.012;
   var DEFAULTS = { cd: 0.33, areaSqft: 24.2, weightLb: 4050, weightLbFwd: 3375 };
   var MF_WR = 222.5, MF_NMAX = 14;
-  var H_OVER_L = 0.553 / 2.753, RWD_REAR = 0.45, FWD_FRONT = 0.655, FWD_DRAG_TIRE = 0.92;
+  var H_OVER_L = 0.553 / 2.753, RWD_REAR = 0.45, FWD_FRONT = 0.655, FWD_DRAG_TIRE = 0.92, FWD_DRAG_TIRE_UNPREP = 0.95;
   var DRIVETRAINS = { rwd: 'RWD', fwd: 'FWD', awd: 'AWD' };
   var AWD_FACTOR = 0.947;
   var BASE_GRIP_G = 1.0, HANDOFF_MPH = 40, ROLLOUT_FT = 1, TRAP_SPAN_FT = 66;
   var MAX_MPH = 200.5, MAX_FT = 5300;
 
-  var TIRE_LABELS = { 0: 'Street', 1: 'Drag Radial', 2: 'Slick', 3: 'Summer', 4: 'UHP', 5: 'R-Compound' };
-  var TIRE_ORDER = [0, 3, 4, 5, 1, 2];   // PowerCurve <select> order
+  var TIRE_LABELS = { 0: 'Street', 1: 'Drag Radial', 2: 'Slick', 3: 'Summer', 4: 'UHP', 5: 'R-Compound', 6: 'Perfect Traction' };
+  var TIRE_ORDER = [0, 3, 4, 5, 1, 2, 6];   // PowerCurve <select> order (+ Perfect Traction)
   // PowerCurve tire option id -> launch class (see header).
-  var TIRE_CLASS = { 0: 'street', 3: 'summer', 4: 'uhp', 5: 'rcomp', 1: 'dragradial', 2: 'slick' };
+  var TIRE_CLASS = { 0: 'street', 3: 'summer', 4: 'uhp', 5: 'rcomp', 1: 'dragradial', 2: 'slick', 6: 'perfect' };
   // Grip ratios between neighbouring classes (sourced, see header); the two
   // anchors (Street, Drag Radial) and the launch terms are fitted (LOO).
   var TIRE_RATIO = { summer: 1.075, uhp: 1.10, rcomp: 1.142, slick: 1.02 };
@@ -98,7 +104,10 @@
     street: STREET_G, summer: STREET_G * TIRE_RATIO.summer, uhp: STREET_G * TIRE_RATIO.uhp,
     rcomp: STREET_G * TIRE_RATIO.rcomp, dragradial: DRAG_RADIAL_G, slick: DRAG_RADIAL_G * TIRE_RATIO.slick
   };
-  var UNPREP = { street: 0.902, dragradial: 0.81, slick: 0.81 / 1.0404 }; // street-type rubber / drag radial / slick
+  // R-Compound on an unprepped surface: owner-directed target (Jorge: RWD,
+  // 130 mph trap reads a 1.890 s 60 ft), NOT a sourced fit. Street/Summer/UHP keep 0.902.
+  var RCOMP_UNPREP = 0.9486;
+  var UNPREP = { street: 0.902, rcomp: RCOMP_UNPREP, dragradial: 0.81, slick: 0.81 / 1.0404 }; // street-type rubber / R-Compound / drag radial / slick
   var SPIN = 0.148, SOFT_N = 2.923, LAUNCH_VT_MPH = 25, LAUNCH_RPM_BETA = 0.15;
   function normalizePrep(p) {
     p = String(p == null ? 'unprepped' : p).toLowerCase();
@@ -106,9 +115,12 @@
   }
   function tireClass(tire) { return TIRE_CLASS[(tire == null || tire === '' ? 0 : Number(tire)) | 0] || 'street'; }
   function isDrag(c) { return c === 'dragradial' || c === 'slick'; }
+  function isPerfect(c) { return c === 'perfect'; }
   function launchGripG(tire, prep) {
-    var c = tireClass(tire), g = TIRE_GRIP_G[c];
-    if (normalizePrep(prep) !== 'prepped') g *= isDrag(c) ? UNPREP[c] : UNPREP.street;
+    var c = tireClass(tire);
+    if (isPerfect(c)) return Infinity;                  // no grip cap (see perfectCapG)
+    var g = TIRE_GRIP_G[c];
+    if (normalizePrep(prep) !== 'prepped') g *= (isDrag(c) || c === 'rcomp') ? UNPREP[c] : UNPREP.street;
     return g;
   }
   /* Launch acceleration cap (g) for drive-adjusted tire grip gp and power/mass p.
@@ -146,9 +158,28 @@
   }
   /* FWD on drag rubber keeps only part of the drag-tire gain (wheel hop and
    * load coming off the front tires; fitted on 2 cited FWD drag-radial slips). */
-  function driveTireGripG(rwdG, drive, tire) {
+  function driveTireGripG(rwdG, drive, tire, prep) {
+    if (isPerfect(tireClass(tire))) return Infinity;
     var g = driveGripG(rwdG, drive);
-    return normalizeDrive(drive) === 'fwd' && isDrag(tireClass(tire)) ? g * FWD_DRAG_TIRE : g;
+    if (normalizeDrive(drive) !== 'fwd' || !isDrag(tireClass(tire))) return g;
+    return g * (normalizePrep(prep) === 'prepped' ? FWD_DRAG_TIRE : FWD_DRAG_TIRE_UNPREP);
+  }
+  /* Perfect Traction: no grip cap and no wheelspin, same on any track. The
+   * launch is limited only by the drivetrain delivering full power: the same
+   * drive-force term every tire uses, p / 25 mph (full power by 25 mph in first
+   * gear; finite at v = 0, no p / v singularity), at the launch rpm of the
+   * stickiest real tire on that drivetrain (grip^0.15 term), with no grip in
+   * the soft minimum. Above the speed where p / v (with the rotating-mass
+   * factor) drops below that force, the car is purely power limited; the
+   * 40 mph handoff is the same as every tire. Strictly quicker than every
+   * real tire, because each real tire's cap is a soft minimum below this term. */
+  function perfectCapG(p, drive) {
+    var gRef = 0, id, c;
+    for (id in TIRE_CLASS) {
+      c = TIRE_CLASS[id];
+      if (!isPerfect(c)) gRef = Math.max(gRef, driveTireGripG(TIRE_GRIP_G[c], drive, id, 'prepped'));
+    }
+    return p / (LAUNCH_VT_MPH * MPS) / G * Math.pow(gRef, LAUNCH_RPM_BETA);
   }
 
   function interp(A, B, a) {
@@ -248,11 +279,12 @@
       drive: normalizeDrive(input.drive)
     };
     veh.k = 0.5 * RHO * veh.cd * veh.areaSqft * SQFT / (veh.weightLb * LB);
+    veh.perfect = isPerfect(tireClass(veh.tire));
     veh.rwdGripG = launchGripG(veh.tire, veh.prep);
-    veh.gripG = driveTireGripG(veh.rwdGripG, veh.drive, veh.tire);
+    veh.gripG = driveTireGripG(veh.rwdGripG, veh.drive, veh.tire, veh.prep);
     veh.driveLabel = DRIVETRAINS[veh.drive];
     veh.tireLabel = TIRE_LABELS[veh.tire] || TIRE_LABELS[0];
-    veh.prepLabel = veh.prep === 'prepped' ? 'Prepped' : 'Unprepped';
+    veh.prepLabel = veh.perfect ? 'Any track' : (veh.prep === 'prepped' ? 'Prepped' : 'Unprepped');
     return veh;
   }
 
@@ -334,7 +366,7 @@
    * launch holds its grip limit until it meets the power curve (handoff at
    * >= 40 mph), then the car follows the 40+ trace from that speed. */
   function makeLaunch(p, veh, trace, xx, tt, vv) {
-    var gEff = launchCapG(veh.gripG, p, veh.tire);
+    var gEff = veh.perfect ? perfectCapG(p, veh.drive) : launchCapG(veh.gripG, p, veh.tire);
     var vh = handoffMps(p, veh.k, gEff);
     var L = simulate(p, veh.k, gEff, function (t, x, v) { return v > Math.max(vh, HANDOFF_MPH * MPS) + 0.5 * MPS; }, true);
     var tH = interp(L.V, L.T, vh), xH = interp(L.T, L.X, tH);
@@ -375,9 +407,9 @@
   }
   var api = {
     DEFAULTS: DEFAULTS, RHO: RHO, CRR: CRR, MF_WR: MF_WR, MF_NMAX: MF_NMAX, BASE_GRIP_G: BASE_GRIP_G,
-    TIRE_CLASS: TIRE_CLASS, TIRE_GRIP_G: TIRE_GRIP_G, TIRE_RATIO: TIRE_RATIO, UNPREP: UNPREP, SPIN: SPIN, SOFT_N: SOFT_N, launchCapG: launchCapG, TIRE_LABELS: TIRE_LABELS, TIRE_ORDER: TIRE_ORDER,
+    TIRE_CLASS: TIRE_CLASS, TIRE_GRIP_G: TIRE_GRIP_G, TIRE_RATIO: TIRE_RATIO, UNPREP: UNPREP, SPIN: SPIN, SOFT_N: SOFT_N, launchCapG: launchCapG, perfectCapG: perfectCapG, TIRE_LABELS: TIRE_LABELS, TIRE_ORDER: TIRE_ORDER,
     launchGripG: launchGripG, driveGripG: driveGripG, DRIVETRAINS: DRIVETRAINS,
-    AWD_FACTOR: AWD_FACTOR, H_OVER_L: H_OVER_L, RWD_REAR: RWD_REAR, FWD_FRONT: FWD_FRONT, FWD_DRAG_TIRE: FWD_DRAG_TIRE, simulate: simulate, etAt: etAt, trapAt: trapAt, rollSec: rollSec,
+    AWD_FACTOR: AWD_FACTOR, H_OVER_L: H_OVER_L, RWD_REAR: RWD_REAR, FWD_FRONT: FWD_FRONT, FWD_DRAG_TIRE: FWD_DRAG_TIRE, FWD_DRAG_TIRE_UNPREP: FWD_DRAG_TIRE_UNPREP, simulate: simulate, etAt: etAt, trapAt: trapAt, rollSec: rollSec,
     tAtMph: tAtMph, runCar: runCar, slipEt: slipEt, slipTimeAtMph: slipTimeAtMph,
     slipChartSeconds: slipChartSeconds, slipFeetAtTime: slipFeetAtTime
   };
