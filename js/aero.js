@@ -21,8 +21,14 @@
  *   split + weight transfer leave one axle short of its limit); one class-wide
  *   value fitted on published gas and EV AWD tests (see VERIFY).
  *   The RWD launch grip (1.0 g x tire/prep) fixes the effective mu with a 45%
- *   rear static share (MotorTrend 2024 Mustang GT 55/45); FWD uses 62% front
- *   (MotorTrend Civic Type R and GTI, 62/38). RWD is unchanged by construction.
+ *   rear static share (MotorTrend 2024 Mustang GT 55/45). RWD is unchanged by construction.
+ *   FWD uses an EFFECTIVE front share of 0.48 (static share is ~0.62, MotorTrend
+ *   Civic Type R / GTI 62/38): wheelspin, traction control and torque steer keep
+ *   a street FWD launch well short of the static-share limit. Fitted with
+ *   leave-one-out on 26 published FWD tests (see fromforty-accuracy-fixes-VERIFY).
+ *   FWD drag uses a 3,375 lb default mass instead of 4,050 lb: this is a weight
+ *   effect (C/D curb weights of the FWD set average 3,233 lb; + driver/gear),
+ *   and the class-wide fit (drag x1.2 = 4050/3375) matches it.
  *
  * Below 40 mph the same equation runs, capped by launch grip:
  *   a <= gripG(v) * g - k v^2 - Crr g.  Base grip 1.0 g, scaled by the PowerCurve
@@ -43,9 +49,9 @@
   var Roll = global.FromFortyRoll;
   var G = 9.80665, MPS = 0.44704, FT = 0.3048, LB = 0.45359237, SQFT = 0.09290304;
   var RHO = 1.225, CRR = 0.012;
-  var DEFAULTS = { cd: 0.33, areaSqft: 24.2, weightLb: 4050 };
+  var DEFAULTS = { cd: 0.33, areaSqft: 24.2, weightLb: 4050, weightLbFwd: 3375 };
   var MF_WR = 222.5, MF_NMAX = 14;
-  var H_OVER_L = 0.553 / 2.753, RWD_REAR = 0.45, FWD_FRONT = 0.62;
+  var H_OVER_L = 0.553 / 2.753, RWD_REAR = 0.45, FWD_FRONT = 0.48;
   var DRIVETRAINS = { rwd: 'RWD', fwd: 'FWD', awd: 'AWD' };
   var AWD_FACTOR = 0.87;
   var BASE_GRIP_G = 1.0, HANDOFF_MPH = 40, ROLLOUT_FT = 1, TRAP_SPAN_FT = 66;
@@ -157,11 +163,11 @@
     var cd = parseOpt(input.cd, 0.1, 1.5, 'Drag coefficient (Cd)', issues);
     var area = parseOpt(input.areaSqft, 5, 80, 'Frontal area (sq ft)', issues);
     // Weight is no longer an input (Jorge: redundant); drag uses the default.
-    var wt = null;
+    var wt = null, drive = normalizeDrive(input.drive);
     var veh = {
       cd: cd == null ? DEFAULTS.cd : cd, cdDefault: cd == null,
       areaSqft: area == null ? DEFAULTS.areaSqft : area, areaDefault: area == null,
-      weightLb: wt == null ? DEFAULTS.weightLb : wt, weightDefault: wt == null,
+      weightLb: wt == null ? (drive === 'fwd' ? DEFAULTS.weightLbFwd : DEFAULTS.weightLb) : wt, weightDefault: wt == null,
       tire: input.tire == null || input.tire === '' ? 0 : (Number(input.tire) | 0),
       prep: normalizePrep(input.prep),
       drive: normalizeDrive(input.drive)
