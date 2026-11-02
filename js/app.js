@@ -53,7 +53,7 @@
   // Optional vehicle inputs (aero + launch). Blank = sourced default.
   function optionsOf(card) {
     function opt(key) { var n = card.querySelector('[data-opt="' + key + '"]'); return n ? n.value : ''; }
-    return { cd: opt('cd'), areaSqft: opt('areaSqft'), weightLb: opt('weightLb'), tire: opt('tire'), prep: opt('prep') };
+    return { cd: opt('cd'), areaSqft: opt('areaSqft'), drive: opt('drive') || 'rwd', power: opt('power') || 'gas', tire: opt('tire'), prep: opt('prep') };
   }
 
   function sourceDistanceFt(source) {
@@ -131,64 +131,44 @@
     return finish == null || start == null ? null : Math.max(0, finish - start);
   }
 
-  // Classic dragstrip-style timeslip. Values come from FromFortyTimeslip,
-  // which reads the existing trace and trap projections without changing
-  // them. Rows that depend on the estimated 0-40 mph launch are marked.
-  function buildTimeslip(rows, laneNames) {
+  // Timeslip data (FromFortyTimeslip). Rows that depend on the estimated
+  // 0-40 mph launch carry a compact * marker; MPH is the trap projection and
+  // appears only here.
+  function slipFor(row) {
     var Slip = global.FromFortyTimeslip;
-    if (!Slip) return null;
-    var slips = rows.map(function (row) { return Slip.build(row, profileForRow(row)); });
-    if (slips.some(function (slip) { return !slip; })) return null;
+    return Slip && row && row.ok ? Slip.build(row, profileForRow(row)) : null;
+  }
 
-    var paper = el('section', 'timeslip' + (slips.length > 1 ? ' two-lane' : ''));
-    paper.setAttribute('aria-label', 'Projected dragstrip timeslip');
-    var head = el('div', 'timeslip-head');
-    head.appendChild(el('span', 'timeslip-brand', 'FROMFORTY'));
-    head.appendChild(el('span', 'timeslip-kind', 'PROJECTED TIMESLIP'));
-    paper.appendChild(head);
+  var SLIP_ROWS = [
+    { label: '60\u2032', et: 't60' },
+    { label: '330\u2032', et: 't330' },
+    { label: '1/8 mile', et: 'eighthEt', mph: 'eighth' },
+    { label: '1000\u2032', et: 'thousandEt', mph: '1000' },
+    { label: '1/4 mile', et: 'quarterEt', mph: 'quarter' },
+    { label: '1/2 mile', et: 'halfEt', mph: 'half-mile' },
+    { label: '1 mile', et: 'mileEt', mph: 'mile' }
+  ];
 
-    function line(cls, label, values) {
-      var row = el('div', 'timeslip-row ' + (cls || ''));
-      row.appendChild(el('span', 'timeslip-label', label));
-      values.forEach(function (v) { row.appendChild(el('span', 'timeslip-value', v)); });
-      return row;
-    }
-    function et(v) { return v == null ? '—' : v.toFixed(3); }
-    function mph(v) { return v == null ? '—' : v.toFixed(2); }
+  function trapMapOf(row) {
+    var map = {};
+    (row && row.dragTraps || []).forEach(function (trap) { map[trap.source] = trap; });
+    return map;
+  }
 
-    var table = el('div', 'timeslip-table');
-    if (slips.length > 1) table.appendChild(line('timeslip-lanes', '', laneNames));
-    var spec = [
-      ['est', '60\u2032 *', function (s) { return et(s.t60); }],
-      ['est', '330\u2032 *', function (s) { return et(s.t330); }],
-      ['est', '1/8 ET *', function (s) { return et(s.eighthEt); }],
-      ['mph', '1/8 MPH', function (s) { return mph(s.eighthMph); }],
-      ['est', '1000\u2032 *', function (s) { return et(s.thousandEt); }],
-      ['est', '1/4 ET *', function (s) { return et(s.quarterEt); }],
-      ['mph', '1/4 MPH', function (s) { return mph(s.quarterMph); }],
-      ['est', '1/2 ET *', function (s) { return et(s.halfEt); }],
-      ['mph', '1/2 MPH', function (s) { return mph(s.halfMph); }],
-      ['est', '1 MI ET *', function (s) { return et(s.mileEt); }],
-      ['mph', '1 MI MPH', function (s) { return mph(s.mileMph); }]
-    ];
-    spec.forEach(function (item, index) {
-      table.appendChild(line(item[0] + (index === 4 || index === 7 || index === 9 ? ' timeslip-gap' : ''),
-        item[1], slips.map(item[2])));
-    });
-    table.appendChild(line('est timeslip-launch timeslip-gap', '0\u201340 *', slips.map(function (s) {
-      return s.launch.seconds.toFixed(2) + ' s/' + s.launch.feet.toFixed(0) + '\u2032';
-    })));
-    paper.appendChild(table);
+  function slipLabel(text) {
+    var span = el('span', 'pull-name slip-label', text);
+    span.appendChild(el('sup', 'est-mark', '*'));
+    return span;
+  }
 
-    var note = el('p', 'timeslip-note',
-      slips[0].launch.mode === 'aero'
-        ? '* ESTIMATED: 0\u201340 mph launch on ' + slips.map(function (s) { return s.launch.tireLabel + '/' + s.launch.prepLabel + ' (' + s.launch.gripG.toFixed(2) + ' g)'; }).join(' vs ') +
-          ', then the car\u2019s own power with wind drag; 1-ft rollout. From 40 mph on, times come off the speed/time trace. MPH = Drag Racing trap projections. No reaction time.'
-        : '* ESTIMATED: includes a 0\u201340 mph launch (1.0 g grip limit, then the trace\u2019s own power at 40 mph; 1-ft rollout). ' +
-      'From 40 mph on, times are read off the speed/time trace. MPH = Drag Racing trap projections. No reaction time.');
-    paper.appendChild(note);
-    paper.appendChild(el('p', 'timeslip-credit', 'Created by Jorge Guerra'));
-    return paper;
+  function slipFootnote(slips) {
+    var launch = slips.map(function (s) {
+      return s.launch.mode === 'aero'
+        ? s.launch.drivetrainLabel + ', ' + s.launch.tireLabel + '/' + s.launch.prepLabel + ' ' + s.launch.gripG.toFixed(2) + ' g'
+        : s.launch.gripG.toFixed(2) + ' g';
+    }).join(' vs ');
+    return el('p', 'slip-foot', '* Est. 0\u201340 mph launch (' + launch + ', 1-ft rollout); 40+ from the speed/time trace. ' +
+      'MPH = 66-ft trap. No reaction time.');
   }
 
   function renderResults(card, row, margins) {
@@ -421,42 +401,41 @@
     roll.appendChild(rollLayout);
     slipBody.appendChild(roll);
 
-    var drag = section('Drag Racing', row.inputMode === 'time' ? 'PROJECTED TRAP MPH' :
-      (dragTraps.length ? 'TRAP SPEEDS' : 'NO TRAP'), 'drag-panel');
-    if (!dragTraps.length) {
+    var slip = slipFor(row);
+    var traps = trapMapOf(row);
+    var enteredLabel = { eighth: '1/8', '1000': '1000\u2032', quarter: '1/4' };
+    var drag = section('Timeslip', row.inputMode === 'time' ? 'FROM ' + row.referenceLabel :
+      (row.trapSource ? 'ENTERED ' + (enteredLabel[row.trapSource] || '') + ' MPH' : 'PROJECTED'), 'drag-panel slip-data');
+    if (!slip) {
       var emptyDragLine = el('div', 'pull drag-row');
-      emptyDragLine.appendChild(el('span', 'pull-name', 'Timeslip mph'));
-      emptyDragLine.appendChild(el('span', 'pull-time miss', '—'));
-      emptyDragLine.appendChild(el('span', 'pull-margin trap-unit', 'no mph mark'));
+      emptyDragLine.appendChild(el('span', 'pull-name', 'Timeslip'));
+      emptyDragLine.appendChild(el('span', 'pull-time miss', '\u2014'));
       drag.appendChild(emptyDragLine);
     } else {
-      var sourceLabels = {
-        eighth: '1/8-mile trap',
-        '1000': '1000-foot trap',
-        quarter: '1/4-mile trap',
-        'half-mile': '1/2-mile trap',
-        mile: '1-mile trap'
-      };
-      dragTraps.forEach(function (trap) {
-        var dragLine = el('div', 'pull drag-row');
-        var source = sourceLabels[trap.source] || 'Timeslip trap';
-        if (row.inputMode === 'time') {
-          source += ' from ' + row.referenceLabel;
-        } else if (trap.projected) {
-          source += ' from ' + (sourceLabels[trap.fromSource] || 'entered trap');
-        } else {
-          source += ' entered';
-        }
-        dragLine.appendChild(el('span', 'pull-name', source));
-        dragLine.appendChild(el('span', 'pull-time trap-speed', trap.trapMph.toFixed(2) + ' mph'));
-        dragLine.appendChild(el('span', 'pull-margin trap-unit', sourceDistanceFt(trap.source) == null ? 'distance unavailable' : sourceDistanceFt(trap.source).toFixed(0) + ' ft'));
-        drag.appendChild(dragLine);
+      var slipHead = el('div', 'pull drag-row slip-head-row');
+      slipHead.appendChild(el('span', 'pull-name', ''));
+      slipHead.appendChild(el('span', 'pull-time trap-speed slip-col', 'ET'));
+      slipHead.appendChild(el('span', 'pull-margin trap-unit slip-col', 'MPH'));
+      drag.appendChild(slipHead);
+      SLIP_ROWS.forEach(function (spec) {
+        var line = el('div', 'pull drag-row slip-line');
+        line.appendChild(slipLabel(spec.label));
+        var et = slip[spec.et];
+        line.appendChild(el('span', 'pull-time trap-speed', et == null ? '\u2014' : et.toFixed(3)));
+        var trap = spec.mph ? traps[spec.mph] : null;
+        line.appendChild(el('span', 'pull-margin trap-unit' + (trap && !trap.projected ? ' entered' : ''),
+          trap ? trap.trapMph.toFixed(2) : ''));
+        drag.appendChild(line);
       });
+      var launchLine = el('div', 'pull drag-row slip-line slip-launch');
+      launchLine.appendChild(slipLabel('0\u201340'));
+      launchLine.appendChild(el('span', 'pull-time trap-speed', slip.launch.seconds.toFixed(2)));
+      launchLine.appendChild(el('span', 'pull-margin trap-unit', slip.launch.feet.toFixed(0) + ' ft'));
+      drag.appendChild(launchLine);
+      drag.appendChild(slipFootnote([slip]));
     }
     slipBody.appendChild(drag);
     host.appendChild(slipBody);
-    var timeslip = buildTimeslip([row], ['VEHICLE']);
-    if (timeslip) host.appendChild(timeslip);
     // Keep the trace beneath the complete roll and drag results.
     addSpeedGraph(host);
   }
@@ -560,13 +539,14 @@
       }
       optGrid.appendChild(field('Drag coefficient (Cd)', optNum('cd', 'Default ' + Aero.DEFAULTS.cd)));
       optGrid.appendChild(field('Frontal area (sq ft)', optNum('areaSqft', 'Default ' + Aero.DEFAULTS.areaSqft)));
-      optGrid.appendChild(field('Weight (lb)', optNum('weightLb', 'Default ' + Aero.DEFAULTS.weightLb)));
+      optGrid.appendChild(field('Drivetrain', optSelect('drive', [['rwd', 'RWD', true], ['fwd', 'FWD'], ['awd', 'AWD']])));
+      optGrid.appendChild(field('Powertrain', optSelect('power', [['gas', 'Gas', true], ['ev', 'EV']])));
       optGrid.appendChild(field('Tire', optSelect('tire', Aero.TIRE_ORDER.map(function (id) {
         return [String(id), Aero.TIRE_LABELS[id], id === 0];
       }))));
       optGrid.appendChild(field('Track', optSelect('prep', [['unprepped', 'Unprepped', true], ['prepped', 'Prepped']])));
       vehicle.appendChild(optGrid);
-      vehicle.appendChild(el('p', 'vehicle-opts-note', 'Blank uses defaults. Cd, area and weight set wind drag; tire and track change only the 0\u201340 mph launch.'));
+      vehicle.appendChild(el('p', 'vehicle-opts-note', 'Blank uses defaults. Cd and area set wind drag; drivetrain, tire and track change only the 0\u201340 mph launch.'));
     }
 
     var remove = null;
@@ -756,38 +736,44 @@
       });
     body.appendChild(results.block);
 
-    function trapMap(row) {
-      var map = {};
-      (row.dragTraps || []).forEach(function (trap) { map[trap.source] = trap.trapMph; });
-      return map;
+    var slips = rows.map(slipFor);
+    var trapsByCar = rows.map(trapMapOf);
+    var drag = makeSection('Timeslip', 'ET + MPH \u00b7 * EST. LAUNCH', 'drag-box slip-box');
+    drag.table.querySelector('.vs-metric').textContent = 'Mark';
+    function slipCell(main, sub, className) {
+      var cell = el('span', 'vs-number ' + className + ' trap-number');
+      cell.appendChild(el('span', 'vs-time-value', main));
+      if (sub) cell.appendChild(el('span', 'vs-distance-value', sub));
+      return cell;
     }
-    var traps1 = trapMap(rows[0]);
-    var traps2 = trapMap(rows[1]);
-    var trapLabels = {
-      eighth: '1/8-mile trap', '1000': '1000-foot trap', quarter: '1/4-mile trap',
-      'half-mile': '1/2-mile trap', mile: '1-mile trap'
-    };
-    var drag = makeSection('Drag racing', 'TRAP SPEED + FIXED DISTANCE', 'drag-box');
-    ['eighth', '1000', 'quarter', 'half-mile', 'mile'].forEach(function (source) {
-      var row = el('div', 'vs-row vs-trap-row');
-      row.appendChild(el('span', 'vs-metric', trapLabels[source]));
-      var value1 = traps1[source], value2 = traps2[source];
-      var distance = sourceDistanceFt(source);
-      function trapCell(value, className) {
-        var cell = el('span', 'vs-number ' + className + ' trap-number');
-        cell.appendChild(el('span', 'vs-time-value', value == null ? '—' : value.toFixed(2) + ' mph'));
-        cell.appendChild(el('span', 'vs-distance-value', distance == null ? 'Distance unavailable' : distance.toFixed(0) + ' ft'));
-        return cell;
-      }
-      row.appendChild(trapCell(value1, 'car-one'));
-      row.appendChild(trapCell(value2, 'car-two'));
-      var delta = value1 == null || value2 == null ? null : value2 - value1;
-      var state = delta == null ? '' : delta > 0 ? ' faster' : delta < 0 ? ' slower' : ' even';
-      var deltaCellEl = el('span', 'vs-delta' + state);
-      deltaCellEl.appendChild(el('span', 'vs-time-value', delta == null ? '—' : (delta >= 0 ? '+' : '') + delta.toFixed(2) + ' mph'));
-      row.appendChild(deltaCellEl);
-      drag.table.appendChild(row);
-    });
+    function signed(v, d, unit) { return (v >= 0 ? '+' : '') + v.toFixed(d) + unit; }
+    function slipRow(label, et1, et2, sub1, sub2, subDelta, etDecimals) {
+      var line = el('div', 'vs-row vs-trap-row slip-line');
+      var name = el('span', 'vs-metric', label);
+      name.appendChild(el('sup', 'est-mark', '*'));
+      line.appendChild(name);
+      line.appendChild(slipCell(et1 == null ? '\u2014' : et1.toFixed(etDecimals) + ' s', sub1, 'car-one'));
+      line.appendChild(slipCell(et2 == null ? '\u2014' : et2.toFixed(etDecimals) + ' s', sub2, 'car-two'));
+      var delta = et1 == null || et2 == null ? null : et2 - et1;
+      var state = delta == null ? '' : delta > 0 ? ' slower' : delta < 0 ? ' quicker' : ' even';
+      var cell = el('span', 'vs-delta' + state);
+      cell.appendChild(el('span', 'vs-time-value', delta == null ? '\u2014' : signed(delta, etDecimals, ' s')));
+      if (subDelta) cell.appendChild(el('span', 'vs-distance-value', subDelta));
+      line.appendChild(cell);
+      drag.table.appendChild(line);
+    }
+    if (slips[0] && slips[1]) {
+      SLIP_ROWS.forEach(function (spec) {
+        var t1 = spec.mph ? trapsByCar[0][spec.mph] : null, t2 = spec.mph ? trapsByCar[1][spec.mph] : null;
+        slipRow(spec.label, slips[0][spec.et], slips[1][spec.et],
+          t1 ? t1.trapMph.toFixed(2) + ' mph' : null, t2 ? t2.trapMph.toFixed(2) + ' mph' : null,
+          t1 && t2 ? signed(t2.trapMph - t1.trapMph, 2, ' mph') : null, 3);
+      });
+      slipRow('0\u201340', slips[0].launch.seconds, slips[1].launch.seconds,
+        slips[0].launch.feet.toFixed(0) + ' ft', slips[1].launch.feet.toFixed(0) + ' ft',
+        signed(slips[1].launch.feet - slips[0].launch.feet, 0, ' ft'), 2);
+      drag.block.appendChild(slipFootnote(slips));
+    }
     body.appendChild(drag.block);
     panel.appendChild(body);
 
@@ -930,8 +916,6 @@
       graph.appendChild(svg); panel.appendChild(graph);
     }
 
-    var vsTimeslip = buildTimeslip(rows, ['LEFT · VEHICLE', 'RIGHT · OPPONENT']);
-    if (vsTimeslip) panel.appendChild(vsTimeslip);
     addComparisonGraph();
     panel.appendChild(el('p', 'vs-note', 'Differences are Opponent Vehicle minus Vehicle. Positive roll time means Opponent Vehicle is slower; positive trap speed means Opponent Vehicle is faster.'));
     host.appendChild(panel);

@@ -3173,112 +3173,6 @@ h1 {
   }
 }
 
-/* ---------------------------------------------------------------------------
-   Projected timeslip: a narrow thermal-paper slip on the carbon page.
-   --------------------------------------------------------------------------- */
-.timeslip {
-  --slip-paper: #f4f0e4;
-  --slip-ink: #17191b;
-  --slip-faint: #6c6a62;
-  --slip-est: #7a5a1f;
-  position: relative;
-  width: min(100%, 340px);
-  margin: 26px auto 8px;
-  padding: 22px 20px 20px;
-  background: var(--slip-paper);
-  background-image: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.018) 0 1px, transparent 1px 3px);
-  color: var(--slip-ink);
-  font-family: var(--mono);
-  font-size: 14px;
-  line-height: 1.35;
-  box-shadow: 0 0 0 1px var(--brass-dim), 0 18px 40px rgba(0, 0, 0, 0.55);
-}
-.timeslip.two-lane { width: min(100%, 440px); }
-/* Torn/perforated top and bottom edges. */
-.timeslip::before,
-.timeslip::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 8px;
-  background: linear-gradient(-45deg, var(--slip-paper) 4px, transparent 0) 0 0 / 10px 8px repeat-x,
-              linear-gradient(45deg, var(--slip-paper) 4px, transparent 0) 0 0 / 10px 8px repeat-x;
-}
-.timeslip::before { top: -8px; transform: rotate(180deg); }
-.timeslip::after { bottom: -8px; }
-
-.timeslip-head {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding-bottom: 10px;
-  margin-bottom: 8px;
-  border-bottom: 2px dashed var(--slip-ink);
-  text-align: center;
-}
-.timeslip-brand {
-  font-family: "Orbitron", var(--mono);
-  font-size: 19px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-}
-.timeslip-kind {
-  color: var(--slip-faint);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-}
-.timeslip-table { display: grid; gap: 1px; }
-.timeslip-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  column-gap: 14px;
-  align-items: baseline;
-  padding: 2px 0;
-  font-variant-numeric: tabular-nums;
-}
-.timeslip.two-lane .timeslip-row { grid-template-columns: minmax(0, 1fr) 7.6em 7.6em; }
-.timeslip-label { white-space: nowrap; font-weight: 700; letter-spacing: 0.04em; }
-.timeslip-value { text-align: right; font-weight: 700; white-space: nowrap; }
-.timeslip-row.est .timeslip-label { color: var(--slip-est); }
-.timeslip-row.mph .timeslip-value { font-size: 15px; }
-.timeslip-row.timeslip-gap { margin-top: 7px; }
-.timeslip-row.timeslip-lanes .timeslip-value {
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  color: var(--slip-faint);
-  border-bottom: 1px solid var(--slip-ink);
-  white-space: normal;
-}
-.timeslip-row.timeslip-launch {
-  padding-top: 7px;
-  border-top: 1px dashed var(--slip-faint);
-  font-size: 12px;
-}
-.timeslip-note {
-  margin: 12px 0 0;
-  padding-top: 9px;
-  border-top: 2px dashed var(--slip-ink);
-  color: var(--slip-faint);
-  font-size: 10.5px;
-  line-height: 1.4;
-}
-.timeslip-credit {
-  margin: 10px 0 0;
-  text-align: center;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-@media (max-width: 460px) {
-  .timeslip { padding: 20px 14px 18px; font-size: 13px; }
-  .timeslip.two-lane .timeslip-row { grid-template-columns: minmax(0, 1fr) 6.4em 6.4em; column-gap: 8px; }
-  .timeslip.two-lane .timeslip-row.timeslip-launch .timeslip-value { font-size: 10.5px; }
-}
-
 /* Optional vehicle details (aero branch). Collapsed by default, page theme. */
 .vehicle-opts {
   margin-top: 12px;
@@ -3298,7 +3192,7 @@ h1 {
   text-transform: uppercase;
 }
 .car .vehicle-grid,
-.cars.two-up .vehicle-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.cars.two-up .vehicle-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
 .vehicle-grid .field .field-label { color: var(--brass-light); }
 .vehicle-opts select {
   width: 100%;
@@ -3315,4 +3209,52 @@ h1 {
 .cars.two-up .vehicle-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 900px) {
   .car .vehicle-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Timeslip data (dark theme): replaces the projected-trap box and the paper slip. */
+.slip-data .pull.slip-line,
+.slip-data .pull.slip-head-row { min-height: 30px; }
+.slip-data .pull.slip-head-row { min-height: 22px; border-top: 0; }
+.slip-data .slip-head-row .slip-col { color: #e1a15d; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; }
+.slip-data .slip-line .trap-speed { font-size: clamp(15px, 1.6vw, 18px); font-variant-numeric: tabular-nums; }
+.slip-data .slip-line .trap-unit { color: var(--ink); font-size: 13px; font-variant-numeric: tabular-nums; }
+.slip-data .slip-line .trap-unit.entered { color: var(--lime, #b8f35a); }
+.slip-data .slip-launch .trap-speed,
+.slip-data .slip-launch .trap-unit { color: var(--muted); font-size: 12px; }
+.est-mark {
+  margin-left: 2px;
+  color: var(--muted);
+  font-size: 0.85em;
+  font-weight: 400;
+  vertical-align: super;
+  line-height: 0;
+}
+.slip-foot {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.slip-box .vs-row.slip-line { min-height: 0; }
+.slip-box .vs-row.slip-line .vs-distance-value { font-size: 10px; color: var(--muted); }
+.slip-box .slip-foot { padding: 0 2px; }
+@media (max-width: 560px) {
+  /* The slip's per-car MPH is data, not the duplicated trap distance: keep it on phones. */
+  .vs-result-box.drag-box.slip-box .vs-number .vs-distance-value { display: block; }
+  .slip-data .pull.slip-line,
+  .slip-data .pull.slip-head-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 4.6em 4.4em;
+    align-items: baseline;
+    column-gap: 10px;
+  }
+  .slip-data .slip-line > *,
+  .slip-data .slip-head-row > * { grid-row: 1; text-align: right; position: static; margin: 0; }
+  .slip-data .slip-line > :nth-child(1),
+  .slip-data .slip-head-row > :nth-child(1) { grid-column: 1; text-align: left; }
+  .slip-data .slip-line > :nth-child(2),
+  .slip-data .slip-head-row > :nth-child(2) { grid-column: 2; }
+  .slip-data .slip-line > :nth-child(3),
+  .slip-data .slip-head-row > :nth-child(3) { grid-column: 3; }
 }

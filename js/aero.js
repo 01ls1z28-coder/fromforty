@@ -9,8 +9,19 @@
  *     rho = 1.225 kg/m^3                    ISA sea-level air density
  *     Crr = 0.012                           typical car tire on asphalt (0.010-0.015)
  *     MF(v) = 1.04 + 0.0025 * N^2           Gillespie rotating-mass factor,
- *       N = overall gear ratio = min(14, 222.5 / v[m/s])  (engine held near peak
- *       power; 222.5 m/s = 6,350 rpm on a 13.2 in tire radius).
+ *       Gas: N = overall gear ratio = min(14, 222.5 / v[m/s])  (engine held near
+ *       peak power; 222.5 m/s = 6,350 rpm on a 13.2 in tire radius).
+ *       EV:  same as Gas. A fixed 9.04:1 single-speed term (Tesla Model 3 owner's
+ *       manual) was tested and made every EV check worse (see VERIFY), so EV does
+ *       not change the numbers: the model already has no shift loss and a flat,
+ *       grip-limited launch for every car. EV is recorded on the slip only.
+ *
+ * Drivetrain (launch only, Gillespie traction-limited acceleration with
+ * longitudinal weight transfer, h/L = 0.553 m / 2.753 m):
+ *   RWD a = mu*Wr/(1 - mu*h/L)   FWD a = mu*Wf/(1 + mu*h/L)   AWD a = mu
+ *   The RWD launch grip (1.0 g x tire/prep) fixes the effective mu with a 45%
+ *   rear static share (MotorTrend 2024 Mustang GT 55/45); FWD uses 62% front
+ *   (MotorTrend Civic Type R and GTI, 62/38). RWD is unchanged by construction.
  *
  * Below 40 mph the same equation runs, capped by launch grip:
  *   a <= gripG(v) * g - k v^2 - Crr g.  Base grip 1.0 g, scaled by the PowerCurve
@@ -32,7 +43,10 @@
   var G = 9.80665, MPS = 0.44704, FT = 0.3048, LB = 0.45359237, SQFT = 0.09290304;
   var RHO = 1.225, CRR = 0.012;
   var DEFAULTS = { cd: 0.33, areaSqft: 24.2, weightLb: 4050 };
-  var MF_WR = 222.5, MF_NMAX = 14;
+  var MF_WR = 222.5, MF_NMAX = 14, EV_RATIO = 9.04;
+  var H_OVER_L = 0.553 / 2.753, RWD_REAR = 0.45, FWD_FRONT = 0.62;
+  var DRIVETRAINS = { rwd: 'RWD', fwd: 'FWD', awd: 'AWD' };
+  var POWERTRAINS = { gas: 'Gas', ev: 'EV' };
   var BASE_GRIP_G = 1.0, HANDOFF_MPH = 40, ROLLOUT_FT = 1, TRAP_SPAN_FT = 66;
   var MAX_MPH = 200.5, MAX_FT = 5300;
 
@@ -56,6 +70,18 @@
   }
   function launchGripG(tire, prep) { return BASE_GRIP_G * tireMu(tire, prep) / REF_MU; }
 
+  function normalizeDrive(d) { d = String(d == null ? 'rwd' : d).toLowerCase(); return DRIVETRAINS[d] ? d : 'rwd'; }
+  function normalizePower(p) { p = String(p == null ? 'gas' : p).toLowerCase(); return POWERTRAINS[p] ? p : 'gas'; }
+
+  /* Launch grip (g) for a drivetrain, from the RWD-equivalent tire grip. */
+  function driveGripG(rwdG, drive) {
+    drive = normalizeDrive(drive);
+    if (drive === 'rwd') return rwdG;
+    var mu = rwdG / (RWD_REAR + rwdG * H_OVER_L);          // effective mu behind the RWD figure
+    if (drive === 'awd') return mu;
+    return mu * FWD_FRONT / (1 + mu * H_OVER_L);
+  }
+
   function interp(A, B, a) {
     var n = A.length; if (!n || a < A[0] || a > A[n - 1]) return null;
     var lo = 0, hi = n - 1;
@@ -64,9 +90,9 @@
     return B[lo] + (B[hi] - B[lo]) * (d ? (a - A[lo]) / d : 0);
   }
 
-  function mfAt(v) { var N = Math.min(MF_NMAX, v > 0.1 ? MF_WR / v : MF_NMAX); return 1.04 + 0.0025 * N * N; }
-
+  function mfGas(v) { var N = Math.min(MF_NMAX, v > 0.1 ? MF_WR / v : MF_NMAX); return 1.04 + 0.0025 * N * N; }
   function accelFn(p, k, gripG) {
+    var mfAt = mfGas;
     var c = CRR * G, v40 = HANDOFF_MPH * MPS, A0 = gripG * G;
     function aPow(v) { return (p / Math.max(v, 1e-6) - k * v * v - c) / mfAt(v); }
     var need40 = aPow(v40) + k * v40 * v40 + c;
@@ -79,7 +105,7 @@
   }
 
   /* RK4 from rest. stop(t,x,v) ends early (used while solving). */
-  function simulate(p, k, gripG, stop) {
+  function simulate(p, k, gripG, stop, ev) {
     var acc = accelFn(p, k, gripG);
     var T = [0], X = [0], V = [0], t = 0, x = 0, v = 0;
     while (t < 400) {
@@ -93,7 +119,7 @@
       if (stop && stop(t, x, v)) break;
       if (v >= MAX_MPH * MPS && x >= (MAX_FT + ROLLOUT_FT) * FT) break;
     }
-    var run = { T: T, X: X, V: V, p: p, k: k, gripG: gripG, rollM: ROLLOUT_FT * FT };
+    var run = { T: T, X: X, V: V, p: p, k: k, gripG: gripG, ev: !!ev, rollM: ROLLOUT_FT * FT };
     run.t0 = interp(X, T, run.rollM);
     run.t40 = interp(V, T, HANDOFF_MPH * MPS);
     run.x40 = run.t40 == null ? null : interp(T, X, run.t40);
@@ -108,11 +134,11 @@
   function tAtMph(run, mph) { return interp(run.V, run.T, mph * MPS); }
   function rollSec(run, a, b) { var x = tAtMph(run, a), y = tAtMph(run, b); return x == null || y == null ? null : y - x; }
 
-  function solveP(k, metric, target, slowerWhenHigher, stopFor) {
+  function solveP(k, metric, target, slowerWhenHigher, stopFor, ev) {
     var lo = 1, hi = 8000;
     for (var i = 0; i < 48; i++) {
       var m = Math.sqrt(lo * hi);
-      var val = metric(simulate(m, k, BASE_GRIP_G, stopFor));
+      var val = metric(simulate(m, k, BASE_GRIP_G, stopFor, ev));
       var tooWeak = slowerWhenHigher ? (val == null || val > target) : (val == null || val < target);
       if (tooWeak) lo = m; else hi = m;
     }
@@ -130,16 +156,23 @@
   function vehicleOf(input, issues) {
     var cd = parseOpt(input.cd, 0.1, 1.5, 'Drag coefficient (Cd)', issues);
     var area = parseOpt(input.areaSqft, 5, 80, 'Frontal area (sq ft)', issues);
-    var wt = parseOpt(input.weightLb, 500, 15000, 'Weight (lb)', issues);
+    // Weight is no longer an input (Jorge: redundant); drag uses the default.
+    var wt = null;
     var veh = {
       cd: cd == null ? DEFAULTS.cd : cd, cdDefault: cd == null,
       areaSqft: area == null ? DEFAULTS.areaSqft : area, areaDefault: area == null,
       weightLb: wt == null ? DEFAULTS.weightLb : wt, weightDefault: wt == null,
       tire: input.tire == null || input.tire === '' ? 0 : (Number(input.tire) | 0),
-      prep: normalizePrep(input.prep)
+      prep: normalizePrep(input.prep),
+      drive: normalizeDrive(input.drive),
+      power: normalizePower(input.power)
     };
     veh.k = 0.5 * RHO * veh.cd * veh.areaSqft * SQFT / (veh.weightLb * LB);
-    veh.gripG = launchGripG(veh.tire, veh.prep);
+    veh.rwdGripG = launchGripG(veh.tire, veh.prep);
+    veh.gripG = driveGripG(veh.rwdGripG, veh.drive);
+    veh.ev = veh.power === 'ev';
+    veh.driveLabel = DRIVETRAINS[veh.drive];
+    veh.powerLabel = POWERTRAINS[veh.power];
     veh.tireLabel = TIRE_LABELS[veh.tire] || TIRE_LABELS[0];
     veh.prepLabel = veh.prep === 'prepped' ? 'Prepped' : 'Unprepped';
     return veh;
@@ -169,13 +202,13 @@
     if (resolved.mode === 'trap') {
       var D = resolved.trap.distanceFt;
       p = solveP(veh.k, function (r) { return trapAt(r, D); }, resolved.trap.trapMph, false,
-        function (t, x) { return x > (D + ROLLOUT_FT + 1) * FT; });
+        function (t, x) { return x > (D + ROLLOUT_FT + 1) * FT; }, veh.ev);
     } else {
       var a = resolved.referenceStartMph, b = resolved.referenceEndMph;
       p = solveP(veh.k, function (r) { return rollSec(r, a, b); }, resolved.referenceSeconds, true,
-        function (t, x, v) { return v > (b + 0.5) * MPS; });
+        function (t, x, v) { return v > (b + 0.5) * MPS; }, veh.ev);
     }
-    var run = simulate(p, veh.k, BASE_GRIP_G);
+    var run = simulate(p, veh.k, BASE_GRIP_G, null, veh.ev);
     var top = run.V[run.V.length - 1] / MPS;
 
     PULLS.forEach(function (pl) {
@@ -207,7 +240,7 @@
     };
 
     // Launch with the chosen tire/prep (re-times 0-40 only).
-    var L = veh.gripG === BASE_GRIP_G ? run : simulate(p, veh.k, veh.gripG, function (t, x, v) { return v > (HANDOFF_MPH + 0.5) * MPS; });
+    var L = veh.gripG === BASE_GRIP_G ? run : simulate(p, veh.k, veh.gripG, function (t, x, v) { return v > (HANDOFF_MPH + 0.5) * MPS; }, veh.ev);
     var launch = {
       run: L, seconds: L.t40 - L.t0, feet: (L.x40 - L.rollM) / FT, gripG: veh.gripG,
       defaultSeconds: run.t40 - run.t0, defaultFeet: (run.x40 - run.rollM) / FT
@@ -232,7 +265,8 @@
   var api = {
     DEFAULTS: DEFAULTS, RHO: RHO, CRR: CRR, MF_WR: MF_WR, MF_NMAX: MF_NMAX, BASE_GRIP_G: BASE_GRIP_G,
     TIRE_MU_BY_PREP: TIRE_MU_BY_PREP, TIRE_LABELS: TIRE_LABELS, TIRE_ORDER: TIRE_ORDER,
-    launchGripG: launchGripG, simulate: simulate, etAt: etAt, trapAt: trapAt, rollSec: rollSec,
+    launchGripG: launchGripG, driveGripG: driveGripG, DRIVETRAINS: DRIVETRAINS, POWERTRAINS: POWERTRAINS,
+    EV_RATIO: EV_RATIO, H_OVER_L: H_OVER_L, RWD_REAR: RWD_REAR, FWD_FRONT: FWD_FRONT, simulate: simulate, etAt: etAt, trapAt: trapAt, rollSec: rollSec,
     tAtMph: tAtMph, runCar: runCar, slipEt: slipEt
   };
   global.FromFortyAero = api;
