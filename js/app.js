@@ -50,6 +50,12 @@
     };
   }
 
+  // Optional vehicle inputs (aero + launch). Blank = sourced default.
+  function optionsOf(card) {
+    function opt(key) { var n = card.querySelector('[data-opt="' + key + '"]'); return n ? n.value : ''; }
+    return { cd: opt('cd'), areaSqft: opt('areaSqft'), weightLb: opt('weightLb'), tire: opt('tire'), prep: opt('prep') };
+  }
+
   function sourceDistanceFt(source) {
     return {
       eighth: Roll.EIGHTH_FT,
@@ -73,14 +79,29 @@
       profileTrap = fallback ? fallback.trapMph : null;
       profileDistance = fallback ? sourceDistanceFt(fallback.source) : null;
     }
-    return { trap: profileTrap, distance: profileDistance };
+    return { trap: profileTrap, distance: profileDistance, trace: row && row.aero ? row.aero.trace : null };
+  }
+
+  // Seconds from 40 mph to mph on the car's speed/time trace. Aero rows carry
+  // their own physics trace (js/aero.js); otherwise the original roll curve.
+  function traceSeconds(profile, mph) {
+    if (mph <= 40) return 0;
+    if (!profile) return null;
+    if (profile.trace) return profile.trace.seconds(mph);
+    if (!(profile.trap > 0) || !(profile.distance > 0)) return null;
+    var result = Roll.rollTime(profile.distance, 40, mph, profile.trap);
+    return result && result.seconds > 0 ? result.seconds : null;
+  }
+
+  // Chart end: 200 mph, or 95% of aero top speed (the last few mph take
+  // minutes and would squash the curve).
+  function traceEndSpeed(profile) {
+    if (profile && profile.trace) return Math.max(41, Math.min(200, Math.floor(profile.trace.maxMph * 0.95)));
+    return 200;
   }
 
   function modelElapsedAt(profile, mph) {
-    if (mph <= 40) return 0;
-    if (!profile || !(profile.trap > 0) || !(profile.distance > 0)) return null;
-    var result = Roll.rollTime(profile.distance, 40, mph, profile.trap);
-    return result && result.seconds > 0 ? result.seconds : null;
+    return traceSeconds(profile, mph);
   }
 
   function modelDistanceAt(row, targetMph) {
@@ -160,7 +181,10 @@
     paper.appendChild(table);
 
     var note = el('p', 'timeslip-note',
-      '* ESTIMATED: includes a 0\u201340 mph launch (1.0 g grip limit, then the trace\u2019s own power at 40 mph; 1-ft rollout). ' +
+      slips[0].launch.mode === 'aero'
+        ? '* ESTIMATED: 0\u201340 mph launch on ' + slips.map(function (s) { return s.launch.tireLabel + '/' + s.launch.prepLabel + ' (' + s.launch.gripG.toFixed(2) + ' g)'; }).join(' vs ') +
+          ', then the car\u2019s own power with wind drag; 1-ft rollout. From 40 mph on, times come off the speed/time trace. MPH = Drag Racing trap projections. No reaction time.'
+        : '* ESTIMATED: includes a 0\u201340 mph launch (1.0 g grip limit, then the trace\u2019s own power at 40 mph; 1-ft rollout). ' +
       'From 40 mph on, times are read off the speed/time trace. MPH = Drag Racing trap projections. No reaction time.');
     paper.appendChild(note);
     paper.appendChild(el('p', 'timeslip-credit', 'Created by Jorge Guerra'));
@@ -234,15 +258,8 @@
     var roll = section('Roll Racing', 'SPEED WINDOWS', 'roll-panel');
 
     function addSpeedGraph(block) {
-      var profileTrap = row.trapMph;
-      var profileDistance = row.trapDistanceFt;
-      if (profileTrap == null && dragTraps.length) {
-        var quarter = dragTraps.filter(function (trap) { return trap.source === 'quarter'; })[0];
-        var fallback = quarter || dragTraps[dragTraps.length - 1];
-        profileTrap = fallback ? fallback.trapMph : null;
-        profileDistance = fallback ? sourceDistanceFt(fallback.source) : null;
-      }
-      if (!(profileTrap > 0) || !(profileDistance > 0)) return;
+      var profile = profileForRow(row);
+      if (!profile.trace && (!(profile.trap > 0) || !(profile.distance > 0))) return;
 
       var graph = el('div', 'speed-graph');
       var graphHead = el('div', 'speed-graph-head');
@@ -261,11 +278,10 @@
         return node;
       }
       var left = 58, right = 735, top = 22, bottom = 228;
-      var endSpeed = 200;
-      var endRoll = Roll.rollTime(profileDistance, 40, endSpeed, profileTrap);
-      if (!endRoll || !(endRoll.seconds > 0)) return;
-      var endTime = endRoll.seconds;
-      var speedMarks = [40, 80, 100, 130, 150, 200];
+      var endSpeed = traceEndSpeed(profile);
+      var endTime = traceSeconds(profile, endSpeed);
+      if (!(endTime > 0)) return;
+      var speedMarks = [40, 80, 100, 130, 150, 200].filter(function (m) { return m <= endSpeed; });
       [0, 50, 100, 150, 200, 250].forEach(function (speedMark) {
         var y = bottom - (speedMark / 250) * (bottom - top);
         svg.appendChild(svgEl('line', { x1: left, y1: y, x2: right, y2: y, class: 'graph-grid' }));
@@ -280,8 +296,8 @@
       var samples = [];
       var points = [];
       for (var sample = 0; sample <= 160; sample++) {
-        var mph = 40 + (160 * sample / 160);
-        var elapsed = mph === 40 ? 0 : Roll.rollTime(profileDistance, 40, mph, profileTrap).seconds;
+        var mph = 40 + ((endSpeed - 40) * sample / 160);
+        var elapsed = traceSeconds(profile, mph);
         var x = left + (elapsed / endTime) * (right - left);
         var y = bottom - (mph / 250) * (bottom - top);
         samples.push({ mph: mph, elapsed: elapsed, x: x, y: y });
@@ -296,7 +312,7 @@
         svg.appendChild(label);
       });
       speedMarks.forEach(function (speedMark) {
-        var elapsed = speedMark === 40 ? 0 : Roll.rollTime(profileDistance, 40, speedMark, profileTrap).seconds;
+        var elapsed = traceSeconds(profile, speedMark);
         var x = left + (elapsed / endTime) * (right - left);
         var y = bottom - (speedMark / 250) * (bottom - top);
         svg.appendChild(svgEl('circle', { cx: x, cy: y, r: 3, class: 'graph-dot' }));
@@ -521,6 +537,38 @@
 
     if (!sharedRunAction) primary.appendChild(sharedRunAction = makeRunAction());
 
+    // Optional vehicle details. They never count as a measurement input.
+    var Aero = global.FromFortyAero;
+    var vehicle = null;
+    if (Aero) {
+      vehicle = el('details', 'vehicle-opts');
+      vehicle.appendChild(el('summary', 'vehicle-opts-title', 'Vehicle details (optional)'));
+      var optGrid = el('div', 'grid vehicle-grid');
+      function optNum(key, placeholder) {
+        var input = makeInput({ type: 'number', value: '', step: 'any', inputMode: 'decimal', autocomplete: 'off', placeholder: placeholder });
+        input.dataset.opt = key;
+        return input;
+      }
+      function optSelect(key, options) {
+        var sel = document.createElement('select');
+        sel.dataset.opt = key;
+        options.forEach(function (o) {
+          var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1];
+          if (o[2]) op.selected = true; sel.appendChild(op);
+        });
+        return sel;
+      }
+      optGrid.appendChild(field('Drag coefficient (Cd)', optNum('cd', 'Default ' + Aero.DEFAULTS.cd)));
+      optGrid.appendChild(field('Frontal area (sq ft)', optNum('areaSqft', 'Default ' + Aero.DEFAULTS.areaSqft)));
+      optGrid.appendChild(field('Weight (lb)', optNum('weightLb', 'Default ' + Aero.DEFAULTS.weightLb)));
+      optGrid.appendChild(field('Tire', optSelect('tire', Aero.TIRE_ORDER.map(function (id) {
+        return [String(id), Aero.TIRE_LABELS[id], id === 0];
+      }))));
+      optGrid.appendChild(field('Track', optSelect('prep', [['unprepped', 'Unprepped', true], ['prepped', 'Prepped']])));
+      vehicle.appendChild(optGrid);
+      vehicle.appendChild(el('p', 'vehicle-opts-note', 'Blank uses defaults. Cd, area and weight set wind drag; tire and track change only the 0\u201340 mph launch.'));
+    }
+
     var remove = null;
     if (car.id !== 1) {
       remove = el('button', 'remove', 'Remove Opponent');
@@ -549,6 +597,7 @@
     }
     card.appendChild(identity);
     card.appendChild(primary);
+    if (vehicle) card.appendChild(vehicle);
     card.appendChild(results);
     document.getElementById('cars').appendChild(card);
     ensureRunAction();
@@ -744,7 +793,7 @@
 
     function addComparisonGraph() {
       var profiles = rows.map(profileForRow);
-      if (profiles.some(function (profile) { return !(profile.trap > 0) || !(profile.distance > 0); })) return;
+      if (profiles.some(function (profile) { return !profile.trace && (!(profile.trap > 0) || !(profile.distance > 0)); })) return;
       var graph = el('div', 'speed-graph vs-graph');
       var graphHead = el('div', 'speed-graph-head');
       graphHead.appendChild(el('span', 'speed-graph-title', 'SPEED / TIME TRACE'));
@@ -763,10 +812,8 @@
         return node;
       }
       var left = 58, right = 735, top = 22, bottom = 228;
-      var endSpeed = 200;
-      var endTimes = profiles.map(function (profile) {
-        return Roll.rollTime(profile.distance, 40, endSpeed, profile.trap).seconds;
-      });
+      var endSpeeds = profiles.map(traceEndSpeed);
+      var endTimes = profiles.map(function (profile, i) { return traceSeconds(profile, endSpeeds[i]); });
       var endTime = Math.max.apply(Math, endTimes);
       var speedMarks = [40, 80, 100, 130, 150, 200];
       [0, 50, 100, 150, 200, 250].forEach(function (speedMark) {
@@ -786,7 +833,8 @@
         var samples = [], points = [];
         for (var sample = 0; sample <= 160; sample++) {
           var mph = 40 + sample;
-          var elapsed = mph === 40 ? 0 : Roll.rollTime(profile.distance, 40, mph, profile.trap).seconds;
+          if (mph > endSpeeds[carIndex]) break;
+          var elapsed = traceSeconds(profile, mph);
           var x = left + (elapsed / endTime) * (right - left);
           var y = bottom - (mph / 250) * (bottom - top);
           samples.push({ mph: mph, elapsed: elapsed, x: x, y: y });
@@ -795,7 +843,8 @@
         allSamples.push(samples);
         svg.appendChild(svgEl('polyline', { points: points.join(' '), class: 'graph-line ' + colors[carIndex] }));
         speedMarks.forEach(function (speedMark) {
-          var elapsed = speedMark === 40 ? 0 : Roll.rollTime(profile.distance, 40, speedMark, profile.trap).seconds;
+          if (speedMark > endSpeeds[carIndex]) return;
+          var elapsed = traceSeconds(profile, speedMark);
           var x = left + (elapsed / endTime) * (right - left);
           var y = bottom - (speedMark / 250) * (bottom - top);
           svg.appendChild(svgEl('circle', { cx: x, cy: y, r: 3, class: 'graph-dot ' + colors[carIndex] }));
@@ -906,7 +955,8 @@
           issues: ['Use one input at a time. Clear the other fields before running.']
         };
       }
-      var row = Roll.runCar(input);
+      var Aero = global.FromFortyAero;
+      var row = Aero ? Aero.runCar(Object.assign({}, input, optionsOf(card))) : Roll.runCar(input);
       if (row.ok && !row.name) row.name = i === 0 ? 'Vehicle' : 'Opponent Vehicle';
       return row;
     });

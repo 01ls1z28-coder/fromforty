@@ -90,7 +90,45 @@
     return m;
   }
 
+  /* Aero branch: the row carries its own run (js/aero.js). ET at X ft =
+   * chosen-tire launch to 40 mph + the 40+ trace over the remaining feet;
+   * MPH = the Drag Racing trap projections, unchanged. */
+  function buildAero(row) {
+    var Aero = global.FromFortyAero, A = row.aero, L = A.launch;
+    var traps = {};
+    (row.dragTraps || []).forEach(function (t) { traps[t.source] = t.trapMph; });
+    var marks = [
+      { source: 'eighth', feet: 660 }, { source: '1000', feet: 1000 }, { source: 'quarter', feet: 1320 },
+      { source: 'half-mile', feet: 2640 }, { source: 'mile', feet: 5280 }
+    ];
+    var et = {};
+    marks.forEach(function (mk) { et[mk.source] = Aero.slipEt(row, mk.feet); });
+    var closure = marks.map(function (mk) {
+      var simMph = Aero.trapAt(A.run, mk.feet);
+      return {
+        source: mk.source, feet: mk.feet,
+        mphResidual: simMph == null || traps[mk.source] == null ? null : simMph - traps[mk.source],
+        launchShiftFt: L.feet - L.defaultFeet
+      };
+    });
+    return {
+      launch: {
+        mode: 'aero', seconds: L.seconds, feet: L.feet, gripG: L.gripG,
+        tireLabel: A.vehicle.tireLabel, prepLabel: A.vehicle.prepLabel, rolloutFt: ROLLOUT_FT
+      },
+      t60: Aero.slipEt(row, 60),
+      t330: Aero.slipEt(row, 330),
+      eighthEt: et.eighth, eighthMph: traps.eighth == null ? null : traps.eighth,
+      thousandEt: et['1000'],
+      quarterEt: et.quarter, quarterMph: traps.quarter == null ? null : traps.quarter,
+      halfEt: et['half-mile'], halfMph: traps['half-mile'] == null ? null : traps['half-mile'],
+      mileEt: et.mile, mileMph: traps.mile == null ? null : traps.mile,
+      closure: closure
+    };
+  }
+
   function build(row, profile) {
+    if (row && row.aero && global.FromFortyAero) return buildAero(row);
     if (!row || !profile || !(profile.trap > 0) || !(profile.distance > 0)) return null;
     var a40 = traceAccelAtHandoff(profile);
     if (!(a40 > 0)) return null;
@@ -182,7 +220,8 @@
     ROLLOUT_FT: ROLLOUT_FT,
     traceAccelAtHandoff: traceAccelAtHandoff,
     launchModel: launchModel,
-    build: build
+    build: build,
+    buildAero: buildAero
   };
   global.FromFortyTimeslip = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

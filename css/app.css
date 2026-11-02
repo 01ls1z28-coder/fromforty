@@ -3278,3 +3278,41 @@ h1 {
   .timeslip.two-lane .timeslip-row { grid-template-columns: minmax(0, 1fr) 6.4em 6.4em; column-gap: 8px; }
   .timeslip.two-lane .timeslip-row.timeslip-launch .timeslip-value { font-size: 10.5px; }
 }
+
+/* Optional vehicle details (aero branch). Collapsed by default, page theme. */
+.vehicle-opts {
+  margin-top: 12px;
+  border: 1px solid rgba(201, 160, 90, 0.28);
+  border-radius: 8px;
+  background: rgba(2, 5, 7, 0.55);
+  padding: 0 12px;
+}
+.vehicle-opts[open] { padding-bottom: 12px; }
+.vehicle-opts-title {
+  cursor: pointer;
+  padding: 10px 0;
+  color: var(--brass-light);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.car .vehicle-grid,
+.cars.two-up .vehicle-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.vehicle-grid .field .field-label { color: var(--brass-light); }
+.vehicle-opts select {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid rgba(201, 160, 90, 0.36);
+  border-radius: 7px;
+  color: var(--ink);
+  background: rgba(2, 5, 7, 0.92);
+  font: inherit;
+}
+.vehicle-opts select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-soft); outline: none; }
+.vehicle-opts-note { margin: 8px 0 0; color: var(--muted); font-size: 11px; }
+.cars.two-up .vehicle-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 900px) {
+  .car .vehicle-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
