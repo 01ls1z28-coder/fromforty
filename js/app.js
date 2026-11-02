@@ -53,7 +53,7 @@
   // Optional vehicle inputs (aero + launch). Blank = sourced default.
   function optionsOf(card) {
     function opt(key) { var n = card.querySelector('[data-opt="' + key + '"]'); return n ? n.value : ''; }
-    return { cd: opt('cd'), areaSqft: opt('areaSqft'), drive: opt('drive') || 'rwd', power: opt('power') || 'gas', tire: opt('tire'), prep: opt('prep') };
+    return { cd: opt('cd'), areaSqft: opt('areaSqft'), drive: opt('drive') || 'rwd', tire: opt('tire'), prep: opt('prep') };
   }
 
   function sourceDistanceFt(source) {
@@ -540,7 +540,6 @@
       optGrid.appendChild(field('Drag coefficient (Cd)', optNum('cd', 'Default ' + Aero.DEFAULTS.cd)));
       optGrid.appendChild(field('Frontal area (sq ft)', optNum('areaSqft', 'Default ' + Aero.DEFAULTS.areaSqft)));
       optGrid.appendChild(field('Drivetrain', optSelect('drive', [['rwd', 'RWD', true], ['fwd', 'FWD'], ['awd', 'AWD']])));
-      optGrid.appendChild(field('Powertrain', optSelect('power', [['gas', 'Gas', true], ['ev', 'EV']])));
       optGrid.appendChild(field('Tire', optSelect('tire', Aero.TIRE_ORDER.map(function (id) {
         return [String(id), Aero.TIRE_LABELS[id], id === 0];
       }))));

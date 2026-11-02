@@ -3192,7 +3192,7 @@ h1 {
   text-transform: uppercase;
 }
 .car .vehicle-grid,
-.cars.two-up .vehicle-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.cars.two-up .vehicle-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .vehicle-grid .field .field-label { color: var(--brass-light); }
 .vehicle-opts select {
   width: 100%;

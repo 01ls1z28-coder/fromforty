@@ -115,8 +115,8 @@
       launch: {
         mode: 'aero', seconds: L.seconds, feet: L.feet, gripG: L.gripG,
         tireLabel: A.vehicle.tireLabel, prepLabel: A.vehicle.prepLabel, rolloutFt: ROLLOUT_FT,
-        drive: A.vehicle.drive, power: A.vehicle.power,
-        drivetrainLabel: A.vehicle.driveLabel + (A.vehicle.ev ? ' EV' : '')
+        drive: A.vehicle.drive,
+        drivetrainLabel: A.vehicle.driveLabel
       },
       t60: Aero.slipEt(row, 60),
       t330: Aero.slipEt(row, 330),
