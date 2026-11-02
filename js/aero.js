@@ -234,7 +234,7 @@
     if (f(v40) <= 0) return v40;
     var lo = v40, hi = v40;
     while (f(hi) > 0 && hi < 120) hi += 2;
-    if (f(hi) > 0) return hi;
+    if (f(hi) > 0) return null;                          // never meets the power curve (see makeLaunch)
     for (var i = 0; i < 40; i++) { var m = 0.5 * (lo + hi); if (f(m) > 0) lo = m; else hi = m; }
     return 0.5 * (lo + hi);
   }
@@ -367,9 +367,17 @@
    * >= 40 mph), then the car follows the 40+ trace from that speed. */
   function makeLaunch(p, veh, trace, xx, tt, vv) {
     var gEff = veh.perfect ? perfectCapG(p, veh.drive) : launchCapG(veh.gripG, p, veh.tire);
-    var vh = handoffMps(p, veh.k, gEff);
-    var L = simulate(p, veh.k, gEff, function (t, x, v) { return v > Math.max(vh, HANDOFF_MPH * MPS) + 0.5 * MPS; }, true);
-    var tH = interp(L.V, L.T, vh), xH = interp(L.T, L.X, tH);
+    var vh = handoffMps(p, veh.k, gEff), xEnd = (MAX_FT + ROLLOUT_FT + 1) * FT;
+    var L = simulate(p, veh.k, gEff, function (t, x, v) {
+      return (vh != null && v > Math.max(vh, HANDOFF_MPH * MPS) + 0.5 * MPS) || x > xEnd;
+    }, true);
+    var tH = vh == null ? null : interp(L.V, L.T, vh), xH;
+    if (tH == null) {
+      // Very high power on a low-grip tire: the grip-capped launch does not meet
+      // the power curve within the mile, so the whole slip comes from the launch run.
+      var n = L.T.length - 1; tH = L.T[n]; vh = L.V[n];
+    }
+    xH = interp(L.T, L.X, tH);
     return {
       run: L, seconds: L.t40 - L.t0, feet: (L.x40 - L.rollM) / FT, gripG: gEff, peakGripG: veh.gripG,
       handoffMph: vh / MPS, hSeconds: tH - L.t0, hFeet: (xH - L.rollM) / FT,
