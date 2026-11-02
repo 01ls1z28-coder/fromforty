@@ -22,9 +22,9 @@
  *   value fitted on published gas and EV AWD tests (see VERIFY).
  *   The RWD launch grip (tire/prep table below) fixes the effective mu with a 45%
  *   rear static share (MotorTrend 2024 Mustang GT 55/45).
- *   FWD uses an EFFECTIVE front share of 0.590 (static share is ~0.62, MotorTrend
+ *   FWD uses an EFFECTIVE front share of 0.593 (static share is ~0.62, MotorTrend
  *   Civic Type R / GTI 62/38): wheelspin, traction control and torque steer keep
- *   a street FWD launch short of the static-share limit. AWD_FACTOR 0.796.
+ *   a street FWD launch short of the static-share limit. AWD_FACTOR 0.793. FWD on drag rubber x0.712 (n=2 slips).
  *   Both were refitted (leave-one-out) together with the tire table on real
  *   60 ft slips and C/D 0-60 tests (see fromforty-60ft-VERIFY.md).
  *   FWD drag uses a 3,375 lb default mass instead of 4,050 lb: this is a weight
@@ -39,16 +39,16 @@
  * Launch grip (RWD-equivalent g), fitted with leave-one-out on 35 cited 60 ft
  * slips with known tire and prep plus 30 C/D 0-60 tests (unprepped surface,
  * tire from each C/D spec block). Tire classes for the PowerCurve options:
- *   Street (street / all-season) 0.803   Summer, UHP (summer / UHP) 0.810
- *   Drag Radial, Slick (drag rubber) 1.726 - the cited A/B slips show no
+ *   Street (street / all-season) 0.804   Summer, UHP (summer / UHP) 0.811
+ *   Drag Radial, Slick (drag rubber) 1.731 - the cited A/B slips show no
  *     repeatable radial-vs-slick difference, so they share one value
  *   R-Compound: midpoint of UHP and drag rubber; only 1-2 records
- * Unprepped surface: street-type rubber x0.965 (fitted); drag rubber x0.85
+ * Unprepped surface: street-type rubber x0.968 (fitted); drag rubber x0.85
  *   (fixed from cited prepped/unprepped drag-radial pairs, see VERIFY).
  * Launch drive force = p / 25 mph (full power reached early in first gear).
  *   Below the grip the launch is torque-limited (any tire), so sticky tires
  *   stop helping low-power cars. Above it, the Street tire spins and keeps
- *   (1 - 0.149 (1 - 1/E)) of its grip, E = drive force / grip force.
+ *   (1 - 0.165 (1 - 1/E)) of its grip, E = drive force / grip force.
  *
  * Power is always solved with a fixed 1.0 g reference launch, so the 40+
  * trace, every roll window and every projected trap depend only on the
@@ -65,9 +65,9 @@
   var RHO = 1.225, CRR = 0.012;
   var DEFAULTS = { cd: 0.33, areaSqft: 24.2, weightLb: 4050, weightLbFwd: 3375 };
   var MF_WR = 222.5, MF_NMAX = 14;
-  var H_OVER_L = 0.553 / 2.753, RWD_REAR = 0.45, FWD_FRONT = 0.590;
+  var H_OVER_L = 0.553 / 2.753, RWD_REAR = 0.45, FWD_FRONT = 0.593, FWD_DRAG_TIRE = 0.712;
   var DRIVETRAINS = { rwd: 'RWD', fwd: 'FWD', awd: 'AWD' };
-  var AWD_FACTOR = 0.796;
+  var AWD_FACTOR = 0.793;
   var BASE_GRIP_G = 1.0, HANDOFF_MPH = 40, ROLLOUT_FT = 1, TRAP_SPAN_FT = 66;
   var MAX_MPH = 200.5, MAX_FT = 5300;
 
@@ -75,10 +75,10 @@
   var TIRE_ORDER = [0, 3, 4, 5, 1, 2];   // PowerCurve <select> order
   // PowerCurve tire option id -> launch class (see header).
   var TIRE_CLASS = { 0: 'street', 3: 'uhp', 4: 'uhp', 5: 'rcomp', 1: 'drag', 2: 'drag' };
-  var TIRE_GRIP_G = { street: 0.803, uhp: 0.810, drag: 1.726 };
+  var TIRE_GRIP_G = { street: 0.804, uhp: 0.811, drag: 1.731 };
   TIRE_GRIP_G.rcomp = 0.5 * (TIRE_GRIP_G.uhp + TIRE_GRIP_G.drag);
-  var UNPREP = { street: 0.965, drag: 0.85 };
-  var SPIN = 0.149, SPIN_REF_MPH = 25;
+  var UNPREP = { street: 0.968, drag: 0.85 };
+  var SPIN = 0.165, SPIN_REF_MPH = 25;
 
   function normalizePrep(p) {
     p = String(p == null ? 'unprepped' : p).toLowerCase();
@@ -109,6 +109,12 @@
     var mu = rwdG / (RWD_REAR + rwdG * H_OVER_L);          // effective mu behind the RWD figure
     if (drive === 'awd') return AWD_FACTOR * mu;
     return mu * FWD_FRONT / (1 + mu * H_OVER_L);
+  }
+  /* FWD on drag rubber keeps only part of the drag-tire gain (wheel hop and
+   * load coming off the front tires; fitted on 2 cited FWD drag-radial slips). */
+  function driveTireGripG(rwdG, drive, tire) {
+    var g = driveGripG(rwdG, drive);
+    return normalizeDrive(drive) === 'fwd' && tireClass(tire) === 'drag' ? g * FWD_DRAG_TIRE : g;
   }
 
   function interp(A, B, a) {
@@ -197,7 +203,7 @@
     };
     veh.k = 0.5 * RHO * veh.cd * veh.areaSqft * SQFT / (veh.weightLb * LB);
     veh.rwdGripG = launchGripG(veh.tire, veh.prep);
-    veh.gripG = driveGripG(veh.rwdGripG, veh.drive);
+    veh.gripG = driveTireGripG(veh.rwdGripG, veh.drive, veh.tire);
     veh.driveLabel = DRIVETRAINS[veh.drive];
     veh.tireLabel = TIRE_LABELS[veh.tire] || TIRE_LABELS[0];
     veh.prepLabel = veh.prep === 'prepped' ? 'Prepped' : 'Unprepped';
@@ -293,7 +299,7 @@
     DEFAULTS: DEFAULTS, RHO: RHO, CRR: CRR, MF_WR: MF_WR, MF_NMAX: MF_NMAX, BASE_GRIP_G: BASE_GRIP_G,
     TIRE_CLASS: TIRE_CLASS, TIRE_GRIP_G: TIRE_GRIP_G, UNPREP: UNPREP, SPIN: SPIN, spinGripG: spinGripG, TIRE_LABELS: TIRE_LABELS, TIRE_ORDER: TIRE_ORDER,
     launchGripG: launchGripG, driveGripG: driveGripG, DRIVETRAINS: DRIVETRAINS,
-    AWD_FACTOR: AWD_FACTOR, H_OVER_L: H_OVER_L, RWD_REAR: RWD_REAR, FWD_FRONT: FWD_FRONT, simulate: simulate, etAt: etAt, trapAt: trapAt, rollSec: rollSec,
+    AWD_FACTOR: AWD_FACTOR, H_OVER_L: H_OVER_L, RWD_REAR: RWD_REAR, FWD_FRONT: FWD_FRONT, FWD_DRAG_TIRE: FWD_DRAG_TIRE, simulate: simulate, etAt: etAt, trapAt: trapAt, rollSec: rollSec,
     tAtMph: tAtMph, runCar: runCar, slipEt: slipEt
   };
   global.FromFortyAero = api;
